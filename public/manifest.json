@@ -1,0 +1,24 @@
+{
+  "name": "Kriyā — Gestión de clases",
+  "short_name": "Kriyā",
+  "description": "Gestión de clases, alumnas y finanzas para profesoras de yoga",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f0e8",
+  "theme_color": "#3d4a2e",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

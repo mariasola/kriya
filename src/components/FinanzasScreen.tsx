@@ -15,7 +15,8 @@ export default function FinanzasScreen({ store }: Props) {
   const selYear = today.getFullYear()
   const [pendSheet, setPendSheet] = useState(false)
 
-  const monthOrder = Array.from({ length: 12 }, (_, i) => (selMonth + i) % 12)
+  const currentMonth = today.getMonth()
+  const monthOrder = Array.from({ length: 12 }, (_, i) => (currentMonth + i) % 12)
 
   const clasesMes = data.clases.filter(c => {
     const f = new Date(c.fecha + 'T12:00:00')
@@ -54,7 +55,7 @@ export default function FinanzasScreen({ store }: Props) {
           <div className="hdr-title">Finanzas</div>
           <div className="month-pills">
             {monthOrder.map(m => {
-              const yr = m < selMonth ? selYear + 1 : selYear
+              const yr = m < currentMonth ? selYear + 1 : selYear
               const showYr = yr !== selYear ? ` '${String(yr).slice(2)}` : ''
               return (
                 <button key={m} className={`mpill ${m === selMonth ? 'active' : ''}`} onClick={() => setSelMonth(m)}>

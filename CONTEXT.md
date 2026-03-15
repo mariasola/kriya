@@ -35,10 +35,10 @@ kriya/
 │   ├── components/
 │   │   ├── BottomNav.tsx     # Navegación inferior (Clases / Alumnas / Finanzas)
 │   │   ├── HomeScreen.tsx    # Vista semanal de clases + FAB nueva clase
-│   │   ├── ClaseScreen.tsx   # Detalle de clase, lista alumnas, cambio estado
+│   │   ├── ClaseScreen.tsx   # Detalle de clase, lista alumnas, cambio estado; estado de sala usa toggle switch (no badge)
 │   │   ├── AlumnasScreen.tsx # Directorio de alumnas
 │   │   ├── AlumnaDetalle.tsx # Ficha alumna + historial + notas
-│   │   ├── FinanzasScreen.tsx# Resumen financiero por mes
+│   │   ├── FinanzasScreen.tsx# Resumen financiero por mes; lista de meses con orden fijo (mes actual siempre primero), solo cambia selección visual
 │   │   └── Sheet.tsx         # Bottom sheet reutilizable
 │   ├── hooks/
 │   │   └── useStore.ts       # Estado global, todas las mutaciones de datos

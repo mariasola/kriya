@@ -82,9 +82,15 @@ export default function ClaseScreen({ store, claseId, onBack }: Props) {
         <div className="scroll">
           <div className="sala-ic">
             <div><div className="card-row-lbl">Alquiler sala</div><div className="card-row-val">{formatEur(clase.costeSala)}</div></div>
-            <button className={`badge ${clase.salaPagada ? 'badge-paid' : 'badge-unpaid'}`} onClick={() => updateClass(claseId, { salaPagada: !clase.salaPagada })}>
-              {clase.salaPagada ? 'Pagada' : 'Sin pagar'}
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 13, color: '#5a4a3a' }}>Sala pagada</span>
+              <button
+                onClick={() => updateClass(claseId, { salaPagada: !clase.salaPagada })}
+                style={{ width: 44, height: 26, borderRadius: 13, border: 'none', cursor: 'pointer', background: clase.salaPagada ? '#4a8a5a' : '#d0c8b8', position: 'relative', transition: 'background .2s', flexShrink: 0, padding: 0 }}
+              >
+                <span style={{ position: 'absolute', top: 3, left: clase.salaPagada ? 21 : 3, width: 20, height: 20, borderRadius: '50%', background: '#fff', transition: 'left .2s', display: 'block', boxShadow: '0 1px 3px rgba(0,0,0,.2)' }} />
+              </button>
+            </div>
           </div>
           <div className="dlbl" style={{ marginBottom: 8 }}>Alumnas</div>
           <div className="card">

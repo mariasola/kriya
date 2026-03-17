@@ -1,96 +1,145 @@
-import { AppData, Alumna, Clase, Sala, Inscripcion } from './types'
+import { supabase } from './supabase'
+import { AppData, Room, Class, Student, Enrollment } from './types'
 
-const STORAGE_KEY = 'kriya_data'
-const PRECIO_CLASE = 20
+export const SESSION_PRICE = 20
 
-function today() { return new Date() }
-function addDays(d: Date, n: number): Date {
-  const r = new Date(d); r.setDate(r.getDate() + n); return r
-}
-function toISO(d: Date): string { return d.toISOString().split('T')[0] }
+// ── Mappers (snake_case DB → camelCase frontend) ───────────────────────────
 
-const SEED_DATA: AppData = {
-  salas: [
-    { id: 's1', nombre: 'Espai Cos', direccion: 'Carrer Llull 42' },
-    { id: 's2', nombre: 'Sala Mandala', direccion: 'Av. Meridiana 8' },
-  ],
-  alumnas: [
-    { id: 'a1', nombre: 'María García', tel: '+34 612 345 678', notas: 'Lesión en rodilla derecha. Nivel medio.' },
-    { id: 'a2', nombre: 'Laura Puig', tel: '+34 698 012 345', notas: '' },
-    { id: 'a3', nombre: 'Sílvia Roca', tel: '+34 634 567 890', notas: 'Alergia al látex. Principiante.' },
-    { id: 'a4', nombre: 'Anna Mas', tel: '+34 677 890 123', notas: '' },
-    { id: 'a5', nombre: 'Marta Vidal', tel: '+34 655 432 109', notas: 'Embarazada 4 meses.' },
-  ],
-  clases: [
-    { id: 'c1', nombre: 'Hatha mañana', fecha: toISO(today()), hora: '18:00', salaId: 's1', capacidad: 8, costeSala: 35, salaPagada: false },
-    { id: 'c2', nombre: 'Yin yoga', fecha: toISO(addDays(today(), 1)), hora: '10:30', salaId: 's2', capacidad: 6, costeSala: 30, salaPagada: false },
-    { id: 'c3', nombre: 'Vinyasa flow', fecha: toISO(addDays(today(), 3)), hora: '11:00', salaId: 's1', capacidad: 8, costeSala: 35, salaPagada: true },
-    { id: 'c4', nombre: 'Hatha tarde', fecha: toISO(addDays(today(), -7)), hora: '19:00', salaId: 's2', capacidad: 8, costeSala: 30, salaPagada: true },
-    { id: 'c5', nombre: 'Yin restaurativo', fecha: toISO(addDays(today(), -14)), hora: '10:00', salaId: 's1', capacidad: 6, costeSala: 35, salaPagada: true },
-  ],
-  inscripciones: [
-    { id: 'i1', claseId: 'c1', alumnaId: 'a1', estado: 'pagada', reserva: 0, total: 20 },
-    { id: 'i2', claseId: 'c1', alumnaId: 'a2', estado: 'reserva_pagada', reserva: 10, total: 0 },
-    { id: 'i3', claseId: 'c1', alumnaId: 'a3', estado: 'apuntada', reserva: 0, total: 0 },
-    { id: 'i4', claseId: 'c1', alumnaId: 'a4', estado: 'pagada', reserva: 0, total: 20 },
-    { id: 'i5', claseId: 'c1', alumnaId: 'a5', estado: 'apuntada', reserva: 0, total: 0 },
-    { id: 'i6', claseId: 'c2', alumnaId: 'a1', estado: 'pagada', reserva: 0, total: 20 },
-    { id: 'i7', claseId: 'c2', alumnaId: 'a3', estado: 'reserva_pagada', reserva: 5, total: 0 },
-    { id: 'i8', claseId: 'c2', alumnaId: 'a5', estado: 'apuntada', reserva: 0, total: 0 },
-    { id: 'i9', claseId: 'c3', alumnaId: 'a2', estado: 'pagada', reserva: 0, total: 20 },
-    { id: 'i10', claseId: 'c3', alumnaId: 'a4', estado: 'pagada', reserva: 0, total: 20 },
-    { id: 'i11', claseId: 'c4', alumnaId: 'a1', estado: 'pagada', reserva: 0, total: 20 },
-    { id: 'i12', claseId: 'c4', alumnaId: 'a2', estado: 'pagada', reserva: 0, total: 20 },
-    { id: 'i13', claseId: 'c4', alumnaId: 'a3', estado: 'no_vino', reserva: 0, total: 0 },
-    { id: 'i14', claseId: 'c5', alumnaId: 'a4', estado: 'pagada', reserva: 0, total: 20 },
-    { id: 'i15', claseId: 'c5', alumnaId: 'a5', estado: 'pagada', reserva: 0, total: 20 },
-    { id: 'i16', claseId: 'c5', alumnaId: 'a1', estado: 'pagada', reserva: 0, total: 20 },
-  ]
+function mapRoom(r: any): Room {
+  return { id: r.id, name: r.name, address: r.address || '' }
 }
 
-export function loadData(): AppData {
-  if (typeof window === 'undefined') return SEED_DATA
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) {
-      saveData(SEED_DATA)
-      return SEED_DATA
-    }
-    return JSON.parse(raw) as AppData
-  } catch {
-    return SEED_DATA
+function mapStudent(s: any): Student {
+  return { id: s.id, name: s.name, phone: s.phone || '', notes: s.notes || '' }
+}
+
+function mapClass(c: any): Class {
+  return {
+    id: c.id, name: c.name, date: c.date, time: c.time,
+    roomId: c.room_id || '', capacity: c.capacity,
+    roomCost: c.room_cost, roomPaid: c.room_paid
   }
 }
 
-export function saveData(data: AppData): void {
-  if (typeof window === 'undefined') return
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+function mapEnrollment(e: any): Enrollment {
+  return {
+    id: e.id, classId: e.class_id, studentId: e.student_id,
+    status: e.status, deposit: e.deposit, total: e.total
+  }
 }
 
-// ── Helpers de cálculo ──────────────────────────────────────────────────────
+// ── Loaders ────────────────────────────────────────────────────────────────
 
-export const PRECIO_SESION = PRECIO_CLASE
-
-export function getCobrado(claseId: string, inscripciones: Inscripcion[]): number {
-  return inscripciones
-    .filter(i => i.claseId === claseId)
-    .reduce((s, i) => s + (i.estado === 'pagada' ? i.total : i.estado === 'reserva_pagada' ? i.reserva : 0), 0)
+export async function loadData(): Promise<AppData> {
+  const [rooms, students, classes, enrollments] = await Promise.all([
+    supabase.from('rooms').select('*').order('created_at'),
+    supabase.from('students').select('*').order('name'),
+    supabase.from('classes').select('*').order('date'),
+    supabase.from('enrollments').select('*'),
+  ])
+  return {
+    rooms: (rooms.data || []).map(mapRoom),
+    students: (students.data || []).map(mapStudent),
+    classes: (classes.data || []).map(mapClass),
+    enrollments: (enrollments.data || []).map(mapEnrollment),
+  }
 }
 
-export function getPendiente(claseId: string, inscripciones: Inscripcion[]): number {
-  return inscripciones
-    .filter(i => i.claseId === claseId)
-    .reduce((s, i) => {
-      if (i.estado === 'apuntada') return s + PRECIO_CLASE
-      if (i.estado === 'reserva_pagada') return s + (PRECIO_CLASE - i.reserva)
+// ── Rooms ──────────────────────────────────────────────────────────────────
+
+export async function createRoom(data: Omit<Room, 'id'>) {
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: row } = await supabase.from('rooms')
+    .insert({ name: data.name, address: data.address, user_id: user!.id })
+    .select().single()
+  return mapRoom(row)
+}
+
+// ── Students ───────────────────────────────────────────────────────────────
+
+export async function createStudent(data: Omit<Student, 'id'>) {
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: row } = await supabase.from('students')
+    .insert({ name: data.name, phone: data.phone, notes: data.notes, user_id: user!.id })
+    .select().single()
+  return mapStudent(row)
+}
+
+export async function updateStudent(id: string, changes: Partial<Student>) {
+  const { data: row } = await supabase.from('students')
+    .update({ name: changes.name, phone: changes.phone, notes: changes.notes })
+    .eq('id', id).select().single()
+  return mapStudent(row)
+}
+
+// ── Classes ────────────────────────────────────────────────────────────────
+
+export async function createClass(data: Omit<Class, 'id'>) {
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: row } = await supabase.from('classes')
+    .insert({
+      name: data.name, date: data.date, time: data.time,
+      room_id: data.roomId, capacity: data.capacity,
+      room_cost: data.roomCost, room_paid: data.roomPaid,
+      user_id: user!.id
+    }).select().single()
+  return mapClass(row)
+}
+
+export async function updateClass(id: string, changes: Partial<Class>) {
+  const update: any = {}
+  if (changes.name !== undefined) update.name = changes.name
+  if (changes.date !== undefined) update.date = changes.date
+  if (changes.time !== undefined) update.time = changes.time
+  if (changes.roomId !== undefined) update.room_id = changes.roomId
+  if (changes.capacity !== undefined) update.capacity = changes.capacity
+  if (changes.roomCost !== undefined) update.room_cost = changes.roomCost
+  if (changes.roomPaid !== undefined) update.room_paid = changes.roomPaid
+  const { data: row } = await supabase.from('classes')
+    .update(update).eq('id', id).select().single()
+  return mapClass(row)
+}
+
+// ── Enrollments ────────────────────────────────────────────────────────────
+
+export async function createEnrollment(classId: string, studentId: string) {
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: row } = await supabase.from('enrollments')
+    .insert({ class_id: classId, student_id: studentId, user_id: user!.id })
+    .select().single()
+  return mapEnrollment(row)
+}
+
+export async function updateEnrollment(id: string, changes: Partial<Enrollment>) {
+  const update: any = {}
+  if (changes.status !== undefined) update.status = changes.status
+  if (changes.deposit !== undefined) update.deposit = changes.deposit
+  if (changes.total !== undefined) update.total = changes.total
+  const { data: row } = await supabase.from('enrollments')
+    .update(update).eq('id', id).select().single()
+  return mapEnrollment(row)
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+export function getRevenue(classId: string, enrollments: Enrollment[]): number {
+  return enrollments
+    .filter(e => e.classId === classId)
+    .reduce((s, e) => s + (e.status === 'paid' ? e.total : e.status === 'deposit_paid' ? e.deposit : 0), 0)
+}
+
+export function getPending(classId: string, enrollments: Enrollment[]): number {
+  return enrollments
+    .filter(e => e.classId === classId)
+    .reduce((s, e) => {
+      if (e.status === 'registered') return s + SESSION_PRICE
+      if (e.status === 'deposit_paid') return s + (SESSION_PRICE - e.deposit)
       return s
     }, 0)
 }
 
-export function getInitials(nombre: string): string {
-  return nombre.split(' ').slice(0, 2).map(x => x[0]).join('').toUpperCase()
+export function getInitials(name: string): string {
+  return name.split(' ').slice(0, 2).map(x => x[0]).join('').toUpperCase()
 }
 
 export function formatEur(n: number): string { return `${n}€` }
-
-export function uid(): string { return Date.now().toString(36) + Math.random().toString(36).slice(2) }

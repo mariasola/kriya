@@ -1,44 +1,50 @@
 'use client'
 import { useState } from 'react'
 import { useStore } from '@/hooks/useStore'
-import { getCobrado, getPendiente, formatEur, uid } from '@/lib/data'
-import { Clase } from '@/lib/types'
+import { getRevenue, getPending, formatEur } from '@/lib/data'
+import { Class } from '@/lib/types'
 import Sheet from './Sheet'
 
-interface Props { store: ReturnType<typeof useStore>; onOpenClase: (id: string) => void }
+interface Props { store: ReturnType<typeof useStore>; onOpenClass: (id: string) => void }
 
 function addDays(d: Date, n: number) { const r = new Date(d); r.setDate(r.getDate() + n); return r }
 function sameDay(a: Date, b: Date) { return a.toDateString() === b.toDateString() }
 function cap1(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }
 function toISO(d: Date) { return d.toISOString().split('T')[0] }
 
-export default function HomeScreen({ store, onOpenClase }: Props) {
-  const { data, addClass } = store
+export default function HomeScreen({ store, onOpenClass }: Props) {
+  const { data, loading, addClass } = store
   const today = new Date()
   const [showNew, setShowNew] = useState(false)
-  const [form, setForm] = useState({ nombre: '', fecha: toISO(today), hora: '10:00', capacidad: '8', costeSala: '', salaId: data.salas[0]?.id || '' })
+  const [form, setForm] = useState({ name: '', date: toISO(today), time: '10:00', capacity: '8', roomCost: '', roomId: data.rooms[0]?.id || '' })
+
+  if (loading) return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, background: '#f5f0e8' }}>
+      <p style={{ color: '#8a7a6a', fontSize: 14 }}>Cargando...</p>
+    </div>
+  )
 
   const ws = new Date(today); ws.setDate(today.getDate() - today.getDay() + 1)
   const we = new Date(ws); we.setDate(ws.getDate() + 6)
-  const thisWeek = data.clases.filter(c => { const f = new Date(c.fecha + 'T12:00:00'); return f >= ws && f <= we })
-  const cobrado = thisWeek.reduce((s, c) => s + getCobrado(c.id, data.inscripciones), 0)
-  const pendiente = thisWeek.reduce((s, c) => s + getPendiente(c.id, data.inscripciones), 0)
+  const thisWeek = data.classes.filter(c => { const f = new Date(c.date + 'T12:00:00'); return f >= ws && f <= we })
+  const cobrado = thisWeek.reduce((s, c) => s + getRevenue(c.id, data.enrollments), 0)
+  const pendiente = thisWeek.reduce((s, c) => s + getPending(c.id, data.enrollments), 0)
 
-  const sorted = [...data.clases].sort((a, b) => a.fecha.localeCompare(b.fecha))
-  const grouped: Record<string, Clase[]> = {}
+  const sorted = [...data.classes].sort((a, b) => a.date.localeCompare(b.date))
+  const grouped: Record<string, Class[]> = {}
   sorted.forEach(c => {
-    const f = new Date(c.fecha + 'T12:00:00')
+    const f = new Date(c.date + 'T12:00:00')
     const k = sameDay(f, today) ? 'Hoy' : sameDay(f, addDays(today, 1)) ? 'Mañana' : cap1(f.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }))
     if (!grouped[k]) grouped[k] = []
     grouped[k].push(c)
   })
-  const keys = Object.keys(grouped).filter(k => new Date(grouped[k][0].fecha + 'T12:00:00') >= addDays(today, -1))
+  const keys = Object.keys(grouped).filter(k => new Date(grouped[k][0].date + 'T12:00:00') >= addDays(today, -1))
 
-  function handleSave() {
-    if (!form.nombre || !form.fecha) return
-    addClass({ nombre: form.nombre, fecha: form.fecha, hora: form.hora, salaId: form.salaId || data.salas[0]?.id, capacidad: parseInt(form.capacidad) || 8, costeSala: parseInt(form.costeSala) || 0, salaPagada: false })
+  async function handleSave() {
+    if (!form.name || !form.date) return
+    await addClass({ name: form.name, date: form.date, time: form.time, roomId: form.roomId || data.rooms[0]?.id, capacity: parseInt(form.capacity) || 8, roomCost: parseInt(form.roomCost) || 0, roomPaid: false })
     setShowNew(false)
-    setForm({ nombre: '', fecha: toISO(today), hora: '10:00', capacidad: '8', costeSala: '', salaId: data.salas[0]?.id || '' })
+    setForm({ name: '', date: toISO(today), time: '10:00', capacity: '8', roomCost: '', roomId: data.rooms[0]?.id || '' })
   }
 
   return (
@@ -59,23 +65,23 @@ export default function HomeScreen({ store, onOpenClase }: Props) {
             <div key={k} style={{ marginBottom: '1rem' }}>
               <div className="dlbl">{k}</div>
               {grouped[k].map(c => {
-                const sala = data.salas.find(s => s.id === c.salaId)
-                const ins = data.inscripciones.filter(i => i.claseId === c.id)
-                const f = new Date(c.fecha + 'T12:00:00')
+                const room = data.rooms.find(s => s.id === c.roomId)
+                const ins = data.enrollments.filter(i => i.classId === c.id)
+                const f = new Date(c.date + 'T12:00:00')
                 return (
-                  <div key={c.id} className={`ccard ${sameDay(f, today) ? 'today' : ''}`} onClick={() => onOpenClase(c.id)}>
+                  <div key={c.id} className={`ccard ${sameDay(f, today) ? 'today' : ''}`} onClick={() => onOpenClass(c.id)}>
                     <div style={{ flex: 1 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                        <span className="ccard-name">{c.nombre}</span>
-                        <span className="time-badge">{c.hora}</span>
+                        <span className="ccard-name">{c.name}</span>
+                        <span className="time-badge">{c.time}</span>
                       </div>
                       <div className="ccard-sub">
-                        {sala?.nombre}
-                        {c.salaPagada ? <span className="dot-g" /> : <span className="dot-r" />}
+                        {room?.name}
+                        {c.roomPaid ? <span className="dot-g" /> : <span className="dot-r" />}
                       </div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: 16, fontWeight: 500, color: '#2a2a2a' }}>{ins.length}/{c.capacidad}</div>
+                      <div style={{ fontSize: 16, fontWeight: 500, color: '#2a2a2a' }}>{ins.length}/{c.capacity}</div>
                       <div style={{ fontSize: 10, color: '#8a7a6a', marginTop: 2 }}>alumnas</div>
                     </div>
                   </div>
@@ -96,20 +102,20 @@ export default function HomeScreen({ store, onOpenClase }: Props) {
 
       <Sheet open={showNew} onClose={() => setShowNew(false)} title="Nueva clase">
         <label className="field-label">Nombre</label>
-        <input className="field-input" placeholder="Ej. Hatha mañana" value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} />
+        <input className="field-input" placeholder="Ej. Hatha mañana" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-          <div><label className="field-label">Fecha</label><input className="field-input" type="date" value={form.fecha} onChange={e => setForm(f => ({ ...f, fecha: e.target.value }))} style={{ marginBottom: 0 }} /></div>
-          <div><label className="field-label">Hora</label><input className="field-input" type="time" value={form.hora} onChange={e => setForm(f => ({ ...f, hora: e.target.value }))} style={{ marginBottom: 0 }} /></div>
+          <div><label className="field-label">Fecha</label><input className="field-input" type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} style={{ marginBottom: 0 }} /></div>
+          <div><label className="field-label">Hora</label><input className="field-input" type="time" value={form.time} onChange={e => setForm(f => ({ ...f, time: e.target.value }))} style={{ marginBottom: 0 }} /></div>
         </div>
         <div style={{ height: 12 }} />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-          <div><label className="field-label">Capacidad</label><input className="field-input" type="number" value={form.capacidad} onChange={e => setForm(f => ({ ...f, capacidad: e.target.value }))} style={{ marginBottom: 0 }} /></div>
-          <div><label className="field-label">Coste sala (€)</label><input className="field-input" type="number" value={form.costeSala} onChange={e => setForm(f => ({ ...f, costeSala: e.target.value }))} style={{ marginBottom: 0 }} /></div>
+          <div><label className="field-label">Capacidad</label><input className="field-input" type="number" value={form.capacity} onChange={e => setForm(f => ({ ...f, capacity: e.target.value }))} style={{ marginBottom: 0 }} /></div>
+          <div><label className="field-label">Coste sala (€)</label><input className="field-input" type="number" value={form.roomCost} onChange={e => setForm(f => ({ ...f, roomCost: e.target.value }))} style={{ marginBottom: 0 }} /></div>
         </div>
         <div style={{ height: 12 }} />
         <label className="field-label">Sala</label>
-        <select className="field-input" value={form.salaId} onChange={e => setForm(f => ({ ...f, salaId: e.target.value }))}>
-          {data.salas.map(s => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+        <select className="field-input" value={form.roomId} onChange={e => setForm(f => ({ ...f, roomId: e.target.value }))}>
+          {data.rooms.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
         <button className="btn-primary" onClick={handleSave}>Guardar clase</button>
         <button className="btn-secondary" onClick={() => setShowNew(false)}>Cancelar</button>

@@ -1,50 +1,56 @@
 'use client'
 import { useState } from 'react'
 import { useStore } from '@/hooks/useStore'
-import { getCobrado, getPendiente, formatEur, PRECIO_SESION } from '@/lib/data'
+import { getRevenue, getPending, formatEur, SESSION_PRICE } from '@/lib/data'
 import Sheet from './Sheet'
 
 interface Props { store: ReturnType<typeof useStore> }
 
 const MONTHS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
 
-export default function FinanzasScreen({ store }: Props) {
-  const { data } = store
+export default function FinanceScreen({ store }: Props) {
+  const { data, loading } = store
   const today = new Date()
   const [selMonth, setSelMonth] = useState(today.getMonth())
   const selYear = today.getFullYear()
   const [pendSheet, setPendSheet] = useState(false)
 
+  if (loading) return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, background: '#f5f0e8' }}>
+      <p style={{ color: '#8a7a6a', fontSize: 14 }}>Cargando...</p>
+    </div>
+  )
+
   const currentMonth = today.getMonth()
   const monthOrder = Array.from({ length: 12 }, (_, i) => (currentMonth + i) % 12)
 
-  const clasesMes = data.clases.filter(c => {
-    const f = new Date(c.fecha + 'T12:00:00')
+  const classesMes = data.classes.filter(c => {
+    const f = new Date(c.date + 'T12:00:00')
     return f.getMonth() === selMonth && f.getFullYear() === selYear
   })
 
-  const ingresos = clasesMes.reduce((s, c) => s + getCobrado(c.id, data.inscripciones), 0)
-  const gastos = clasesMes.reduce((s, c) => s + c.costeSala, 0)
+  const ingresos = classesMes.reduce((s, c) => s + getRevenue(c.id, data.enrollments), 0)
+  const gastos = classesMes.reduce((s, c) => s + c.roomCost, 0)
   const balance = ingresos - gastos
-  const pendiente = clasesMes.reduce((s, c) => s + getPendiente(c.id, data.inscripciones), 0)
+  const pendiente = classesMes.reduce((s, c) => s + getPending(c.id, data.enrollments), 0)
 
   const pendMap: Record<string, number> = {}
-  data.inscripciones
-    .filter(i => {
-      const c = clasesMes.find(x => x.id === i.claseId)
-      return c && (i.estado === 'apuntada' || i.estado === 'reserva_pagada')
+  data.enrollments
+    .filter(e => {
+      const c = classesMes.find(x => x.id === e.classId)
+      return c && (e.status === 'registered' || e.status === 'deposit_paid')
     })
-    .forEach(i => {
-      const imp = i.estado === 'apuntada' ? PRECIO_SESION : PRECIO_SESION - i.reserva
-      pendMap[i.alumnaId] = (pendMap[i.alumnaId] || 0) + imp
+    .forEach(e => {
+      const imp = e.status === 'registered' ? SESSION_PRICE : SESSION_PRICE - e.deposit
+      pendMap[e.studentId] = (pendMap[e.studentId] || 0) + imp
     })
   const nPend = Object.keys(pendMap).length
 
-  const salasUsadas: Record<string, { total: number; n: number }> = {}
-  clasesMes.forEach(c => {
-    if (!salasUsadas[c.salaId]) salasUsadas[c.salaId] = { total: 0, n: 0 }
-    salasUsadas[c.salaId].total += c.costeSala
-    salasUsadas[c.salaId].n++
+  const roomsUsed: Record<string, { total: number; n: number }> = {}
+  classesMes.forEach(c => {
+    if (!roomsUsed[c.roomId]) roomsUsed[c.roomId] = { total: 0, n: 0 }
+    roomsUsed[c.roomId].total += c.roomCost
+    roomsUsed[c.roomId].n++
   })
 
   return (
@@ -86,16 +92,16 @@ export default function FinanzasScreen({ store }: Props) {
             </div>
           )}
 
-          {Object.keys(salasUsadas).length > 0 && (
+          {Object.keys(roomsUsed).length > 0 && (
             <>
               <div className="dlbl" style={{ margin: '0 2px 8px' }}>Por sala</div>
               <div className="card">
-                {Object.entries(salasUsadas).map(([sid, v]) => {
-                  const s = data.salas.find(x => x.id === sid)
+                {Object.entries(roomsUsed).map(([rid, v]) => {
+                  const r = data.rooms.find(x => x.id === rid)
                   return (
-                    <div key={sid} className="card-row">
+                    <div key={rid} className="card-row">
                       <div>
-                        <div style={{ fontSize: 14, fontWeight: 500, color: '#2a2a2a' }}>{s?.nombre || 'Sala'}</div>
+                        <div style={{ fontSize: 14, fontWeight: 500, color: '#2a2a2a' }}>{r?.name || 'Sala'}</div>
                         <div style={{ fontSize: 12, color: '#8a7a6a' }}>{v.n} clase{v.n !== 1 ? 's' : ''}</div>
                       </div>
                       <div style={{ fontSize: 15, fontWeight: 500, color: '#9a3a1e' }}>{formatEur(v.total)}</div>
@@ -106,19 +112,19 @@ export default function FinanzasScreen({ store }: Props) {
             </>
           )}
 
-          {clasesMes.length > 0 ? (
+          {classesMes.length > 0 ? (
             <>
               <div className="dlbl" style={{ margin: '0 2px 8px' }}>Clases del mes</div>
               <div className="card">
-                {clasesMes.map(c => {
-                  const co = getCobrado(c.id, data.inscripciones)
-                  const pe = getPendiente(c.id, data.inscripciones)
-                  const nIns = data.inscripciones.filter(i => i.claseId === c.id).length
+                {classesMes.map(c => {
+                  const co = getRevenue(c.id, data.enrollments)
+                  const pe = getPending(c.id, data.enrollments)
+                  const nIns = data.enrollments.filter(e => e.classId === c.id).length
                   return (
                     <div key={c.id} className="card-row">
                       <div>
-                        <div style={{ fontSize: 14, fontWeight: 500, color: '#2a2a2a' }}>{c.nombre}</div>
-                        <div style={{ fontSize: 12, color: '#8a7a6a' }}>{new Date(c.fecha + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} · {nIns} alumnas</div>
+                        <div style={{ fontSize: 14, fontWeight: 500, color: '#2a2a2a' }}>{c.name}</div>
+                        <div style={{ fontSize: 12, color: '#8a7a6a' }}>{new Date(c.date + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} · {nIns} alumnas</div>
                       </div>
                       <div style={{ textAlign: 'right' }}>
                         {co > 0 && <div style={{ fontSize: 14, fontWeight: 500, color: '#2a6640' }}>{formatEur(co)} cobrado</div>}
@@ -138,11 +144,11 @@ export default function FinanzasScreen({ store }: Props) {
 
       <Sheet open={pendSheet} onClose={() => setPendSheet(false)} title="Pendiente de cobrar">
         <div className="card">
-          {Object.entries(pendMap).map(([aid, imp]) => {
-            const a = data.alumnas.find(x => x.id === aid)
+          {Object.entries(pendMap).map(([sid, imp]) => {
+            const s = data.students.find(x => x.id === sid)
             return (
-              <div key={aid} className="pend-row">
-                <div style={{ fontSize: 14, fontWeight: 500, color: '#2a2a2a' }}>{a?.nombre || '—'}</div>
+              <div key={sid} className="pend-row">
+                <div style={{ fontSize: 14, fontWeight: 500, color: '#2a2a2a' }}>{s?.name || '—'}</div>
                 <div style={{ fontSize: 14, fontWeight: 500, color: '#8a5a10' }}>{formatEur(imp)}</div>
               </div>
             )

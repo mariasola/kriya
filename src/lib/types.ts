@@ -1,41 +1,41 @@
-export type EstadoInscripcion = 'apuntada' | 'reserva_pagada' | 'pagada' | 'no_vino'
+export type EnrollmentStatus = 'registered' | 'deposit_paid' | 'paid' | 'no_show'
 
-export interface Sala {
+export interface Room {
   id: string
-  nombre: string
-  direccion: string
+  name: string
+  address: string
 }
 
-export interface Clase {
+export interface Class {
   id: string
-  nombre: string
-  fecha: string // ISO date string YYYY-MM-DD
-  hora: string  // HH:MM
-  salaId: string
-  capacidad: number
-  costeSala: number
-  salaPagada: boolean
+  name: string
+  date: string       // ISO date string YYYY-MM-DD
+  time: string       // HH:MM
+  roomId: string
+  capacity: number
+  roomCost: number
+  roomPaid: boolean
 }
 
-export interface Alumna {
+export interface Student {
   id: string
-  nombre: string
-  tel: string
-  notas: string
+  name: string
+  phone: string
+  notes: string
 }
 
-export interface Inscripcion {
+export interface Enrollment {
   id: string
-  claseId: string
-  alumnaId: string
-  estado: EstadoInscripcion
-  reserva: number
+  classId: string
+  studentId: string
+  status: EnrollmentStatus
+  deposit: number
   total: number
 }
 
 export interface AppData {
-  salas: Sala[]
-  alumnas: Alumna[]
-  clases: Clase[]
-  inscripciones: Inscripcion[]
+  rooms: Room[]
+  students: Student[]
+  classes: Class[]
+  enrollments: Enrollment[]
 }

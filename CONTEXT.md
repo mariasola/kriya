@@ -6,7 +6,7 @@ Documento técnico para retomar el proyecto con una IA o desarrollador externo.
 
 ## Qué es esto
 
-Aplicación web PWA (Progressive Web App) para gestión de clases de yoga. Uso personal de una profesora freelance. No requiere login. Se instala en el móvil desde el navegador como si fuera una app nativa.
+Aplicación web PWA (Progressive Web App) para gestión de clases de yoga. Uso personal de una profesora freelance. Requiere login con email/contraseña (Supabase Auth). Se instala en el móvil desde el navegador como si fuera una app nativa.
 
 ---
 
@@ -17,9 +17,23 @@ Aplicación web PWA (Progressive Web App) para gestión de clases de yoga. Uso p
 | Framework | Next.js 14 (App Router) | Cero configuración, deploy directo en Vercel |
 | UI | React 18 + CSS global | Sin librerías de componentes, control total del diseño |
 | Tipado | TypeScript | Seguridad en los tipos de datos |
-| Datos | localStorage | MVP sin backend. Clave: `kriya_data` |
+| Datos | Supabase (PostgreSQL) | Multi-dispositivo, sincronización en la nube, Auth integrado |
+| Auth | Supabase Auth (email/password) | Login/signup con confirmación por email |
 | Deploy | Vercel | CI/CD automático desde GitHub, tier gratuito suficiente |
 | PWA | manifest.json + service worker | Instalable en iOS/Android desde Safari/Chrome |
+
+---
+
+## Variables de entorno requeridas
+
+Crear `.env.local` en la raíz del proyecto:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+```
+
+En Vercel: Settings → Environment Variables → añadir las mismas dos variables → Redeploy.
 
 ---
 
@@ -30,21 +44,23 @@ kriya/
 ├── src/
 │   ├── app/
 │   │   ├── layout.tsx        # Root layout, meta PWA, registro service worker
-│   │   ├── page.tsx          # Entrada de la app, router de pantallas
+│   │   ├── page.tsx          # Entrada de la app, router de pantallas, gestión de sesión
 │   │   └── globals.css       # Todos los estilos, design tokens como variables CSS
 │   ├── components/
-│   │   ├── BottomNav.tsx     # Navegación inferior (Clases / Alumnas / Finanzas)
+│   │   ├── AuthScreen.tsx    # Pantalla de login/signup
+│   │   ├── BottomNav.tsx     # Navegación inferior (Clases / Alumnas / Finanzas) + botón salir
 │   │   ├── HomeScreen.tsx    # Vista semanal de clases + FAB nueva clase
-│   │   ├── ClaseScreen.tsx   # Detalle de clase, lista alumnas, cambio estado; estado de sala usa toggle switch (no badge)
-│   │   ├── AlumnasScreen.tsx # Directorio de alumnas
-│   │   ├── AlumnaDetalle.tsx # Ficha alumna + historial + notas
-│   │   ├── FinanzasScreen.tsx# Resumen financiero por mes; lista de meses con orden fijo (mes actual siempre primero), solo cambia selección visual
+│   │   ├── ClassScreen.tsx   # Detalle de clase, lista alumnas, cambio estado; sala usa toggle switch
+│   │   ├── StudentsScreen.tsx# Directorio de alumnas
+│   │   ├── StudentDetail.tsx # Ficha alumna + historial + notas
+│   │   ├── FinanceScreen.tsx # Resumen financiero por mes; lista de meses con orden fijo (mes actual siempre primero)
 │   │   └── Sheet.tsx         # Bottom sheet reutilizable
 │   ├── hooks/
-│   │   └── useStore.ts       # Estado global, todas las mutaciones de datos
+│   │   └── useStore.ts       # Estado global, todas las mutaciones de datos (async)
 │   └── lib/
-│       ├── types.ts          # Interfaces TypeScript (Sala, Clase, Alumna, Inscripcion)
-│       └── data.ts           # localStorage I/O, seed data, helpers de cálculo
+│       ├── types.ts          # Interfaces TypeScript (Room, Class, Student, Enrollment)
+│       ├── data.ts           # Supabase I/O, mappers snake_case↔camelCase, helpers de cálculo
+│       └── supabase.ts       # Cliente Supabase (singleton)
 ├── public/
 │   ├── manifest.json         # PWA manifest
 │   ├── sw.js                 # Service worker (cache offline)
@@ -64,22 +80,33 @@ kriya/
 ### Modelo (src/lib/types.ts)
 
 ```ts
-Sala        { id, nombre, direccion }
-Clase       { id, nombre, fecha, hora, salaId, capacidad, costeSala, salaPagada }
-Alumna      { id, nombre, tel, notas }
-Inscripcion { id, claseId, alumnaId, estado, reserva, total }
+Room       { id, name, address }
+Class      { id, name, date, time, roomId, capacity, roomCost, roomPaid }
+Student    { id, name, phone, notes }
+Enrollment { id, classId, studentId, status, deposit, total }
 ```
 
 ### Persistencia
 
-Todo el estado vive en `AppData` (objeto con arrays de las 4 entidades). Se serializa/deserializa de localStorage en cada operación. El hook `useStore` es el único punto de escritura — nunca se escribe localStorage directamente desde los componentes.
+Todo el estado vive en Supabase (PostgreSQL). Las tablas en la base de datos usan snake_case (`room_id`, `room_cost`, etc.) y los mappers en `data.ts` convierten a camelCase para el frontend. El hook `useStore` es el único punto de escritura — nunca se llama a Supabase directamente desde los componentes.
+
+Cada registro pertenece a un usuario (`user_id`). Row Level Security (RLS) en Supabase garantiza que cada usuario solo ve sus propios datos.
 
 ### Flujo de datos
 
 ```
-localStorage → loadData() → useStore (useState) → componentes
-componentes → mutación en useStore → saveData() → localStorage
+Supabase → loadData() → useStore (useState) → componentes
+componentes → mutación en useStore → Supabase → reload()
 ```
+
+---
+
+## Auth
+
+- Login y signup con email/contraseña vía `supabase.auth.signInWithPassword` / `signUp`
+- `page.tsx` escucha `onAuthStateChange` y muestra `AuthScreen` si no hay sesión
+- El botón "Salir" en `BottomNav` llama a `supabase.auth.signOut()`
+- Signup requiere confirmación de email antes de poder entrar
 
 ---
 
@@ -114,22 +141,9 @@ Tipografías:
 ## Cómo añadir un nuevo campo a una entidad
 
 1. Añadir el campo a la interfaz en `src/lib/types.ts`
-2. Añadir el campo al seed data en `src/lib/data.ts`
+2. Añadir el mapper en `src/lib/data.ts` (función `mapX` + función `createX`/`updateX`)
 3. Añadir la mutación correspondiente en `src/hooks/useStore.ts`
 4. Actualizar el formulario en el componente correspondiente
-
----
-
-## Migración a backend (cuando se necesite)
-
-Solo hay que tocar dos archivos:
-
-- `src/lib/data.ts` → reemplazar funciones `loadData` / `saveData` por llamadas a API
-- `src/hooks/useStore.ts` → hacer las funciones async, añadir estados `isLoading` / `error`
-
-El resto del proyecto (componentes, tipos, CSS) no cambia.
-
-Backend recomendado: **Supabase**. El schema de tablas es 1:1 con las 4 entidades del modelo.
 
 ---
 
@@ -161,8 +175,8 @@ No hay tests configurados en MVP. Si se añaden, usar **Vitest** (compatible con
 
 | Decisión | Alternativa descartada | Razón |
 |---|---|---|
-| localStorage | Supabase desde el inicio | MVP de uso personal, un solo dispositivo |
+| Supabase | localStorage | Multi-dispositivo, Auth integrado, sin servidor propio |
 | CSS global | Tailwind / CSS Modules | Control total, menos capas, más fácil de leer para una IA |
 | Next.js static export | React + Vite | Mismo resultado, mejor integración con Vercel |
-| Sin login | Auth con email | Uso personal, complejidad innecesaria en fase 1 |
+| Email/password auth | Sin login | Datos en la nube requieren identificar al usuario |
 | Estados simples (4) | Más granularidad | UX más clara, suficiente para el caso de uso actual |

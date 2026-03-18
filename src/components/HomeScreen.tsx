@@ -4,20 +4,22 @@ import { HomeScreenStore } from '@/hooks/useStore'
 import { getRevenue, getPending, formatEur } from '@/lib/data'
 import { Class } from '@/lib/types'
 import Sheet from './Sheet'
-import RoomSelector from './RoomSelector'
 
-interface Props { store: HomeScreenStore; onOpenClass: (id: string) => void }
+interface Props { store: HomeScreenStore; onOpenClass: (id: string) => void; isActiveTab: boolean }
 
 function addDays(d: Date, n: number) { const r = new Date(d); r.setDate(r.getDate() + n); return r }
 function sameDay(a: Date, b: Date) { return a.toDateString() === b.toDateString() }
 function cap1(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }
 function toISO(d: Date) { return d.toISOString().split('T')[0] }
 
-export default function HomeScreen({ store, onOpenClass }: Props) {
+export default function HomeScreen({ store, onOpenClass, isActiveTab }: Props) {
   const { data, loading, addClass, addRoom } = store
   const today = new Date()
   const [showNew, setShowNew] = useState(false)
   const [form, setForm] = useState({ name: '', date: toISO(today), time: '10:00', capacity: '8', roomCost: '', roomId: '' })
+  const [showInlineRoom, setShowInlineRoom] = useState(false)
+  const [inlineRoomName, setInlineRoomName] = useState('')
+  const [inlineRoomAddress, setInlineRoomAddress] = useState('')
 
   useEffect(() => {
     if (!form.roomId && data.rooms.length > 0) {
@@ -103,9 +105,11 @@ export default function HomeScreen({ store, onOpenClass }: Props) {
         </div>
       </div>
 
-      <button className="fab" onClick={() => setShowNew(true)}>
-        <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      </button>
+      {isActiveTab && (
+        <button className="fab" onClick={() => setShowNew(true)}>
+          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+      )}
 
       <Sheet open={showNew} onClose={() => setShowNew(false)} title="Nueva clase">
         <label className="field-label">Nombre</label>
@@ -120,14 +124,39 @@ export default function HomeScreen({ store, onOpenClass }: Props) {
           <div><label className="field-label">Coste sala (€)</label><input className="field-input" type="number" value={form.roomCost} onChange={e => setForm(f => ({ ...f, roomCost: e.target.value }))} style={{ marginBottom: 0 }} /></div>
         </div>
         <div style={{ height: 12 }} />
-        <RoomSelector
-          rooms={data.rooms}
-          value={form.roomId}
-          onChange={roomId => setForm(f => ({ ...f, roomId }))}
-          addRoom={addRoom}
-        />
+        <label className="field-label">Sala</label>
+        {data.rooms.length > 0 && !showInlineRoom && (
+          <>
+            <select className="field-input" value={form.roomId} onChange={e => setForm(f => ({ ...f, roomId: e.target.value }))}>
+              {data.rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+            </select>
+            <span onClick={() => setShowInlineRoom(true)} style={{ display: 'inline-block', marginTop: 6, marginBottom: 4, fontSize: 13, color: '#3d4a2e', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
+              + Añadir sala
+            </span>
+          </>
+        )}
+        {(data.rooms.length === 0 || showInlineRoom) && (
+          <div style={{ background: '#f5f0e8', borderRadius: 10, padding: '12px', border: '.5px solid #d8d0c0', marginBottom: 8 }}>
+            <div style={{ fontSize: 12, color: '#8a7a6a', marginBottom: 8 }}>Nueva sala</div>
+            <input className="field-input" placeholder="Nombre de la sala" value={inlineRoomName} onChange={e => setInlineRoomName(e.target.value)} style={{ marginBottom: 8 }} />
+            <input className="field-input" placeholder="Dirección (opcional)" value={inlineRoomAddress} onChange={e => setInlineRoomAddress(e.target.value)} style={{ marginBottom: 8 }} />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn-secondary" style={{ flex: 1, padding: '.65rem', fontSize: 13 }} onClick={async () => {
+                if (!inlineRoomName.trim()) return
+                const newRoom = await addRoom({ name: inlineRoomName.trim(), address: inlineRoomAddress.trim() })
+                setForm(f => ({ ...f, roomId: newRoom.id }))
+                setInlineRoomName('')
+                setInlineRoomAddress('')
+                setShowInlineRoom(false)
+              }}>Guardar sala</button>
+              {data.rooms.length > 0 && (
+                <button className="btn-ghost" style={{ flex: 1, padding: '.65rem', fontSize: 13 }} onClick={() => { setShowInlineRoom(false); setInlineRoomName(''); setInlineRoomAddress('') }}>Cancelar</button>
+              )}
+            </div>
+          </div>
+        )}
         <button className="btn-primary" onClick={handleSave}>Guardar clase</button>
-        <button className="btn-secondary" onClick={() => setShowNew(false)}>Cancelar</button>
+        <button className="btn-ghost" onClick={() => setShowNew(false)}>Cancelar</button>
       </Sheet>
     </>
   )

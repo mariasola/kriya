@@ -157,7 +157,7 @@ export default function FinanceScreen({ store }: Props) {
           await updateRoom(editRoomId, roomEditForm)
           setEditRoomId(null)
         }}>Guardar</button>
-        <button className="btn-secondary" onClick={() => setEditRoomId(null)}>Cancelar</button>
+        <button className="btn-ghost" onClick={() => setEditRoomId(null)}>Cancelar</button>
       </Sheet>
 
       <Sheet open={pendSheet} onClose={() => setPendSheet(false)} title="Pendiente de cobrar">
@@ -172,7 +172,7 @@ export default function FinanceScreen({ store }: Props) {
             )
           })}
         </div>
-        <button className="btn-secondary" onClick={() => setPendSheet(false)}>Cerrar</button>
+        <button className="btn-ghost" onClick={() => setPendSheet(false)}>Cerrar</button>
       </Sheet>
     </>
   )

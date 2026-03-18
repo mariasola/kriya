@@ -49,8 +49,8 @@ kriya/
 │   ├── components/
 │   │   ├── AuthScreen.tsx    # Pantalla de login/signup
 │   │   ├── BottomNav.tsx     # Navegación inferior (Clases / Alumnas / Finanzas) + botón salir
-│   │   ├── HomeScreen.tsx    # Vista semanal de clases + FAB nueva clase; selector de sala incluye opción "Nueva sala" que abre sheet apilado
-│   │   ├── ClassScreen.tsx   # Detalle de clase, lista alumnas, cambio estado; sala usa toggle switch; selector de sala en edición incluye opción "Nueva sala" apilada
+│   │   ├── HomeScreen.tsx    # Vista semanal de clases + FAB nueva clase (solo visible en home tab); room selector usa edición inline — clicar "Añadir sala" expande campos inline sin abrir sheet
+│   │   ├── ClassScreen.tsx   # Detalle de clase, lista alumnas, cambio estado; sala usa toggle switch; room selector en edición usa edición inline igual que HomeScreen
 │   │   ├── StudentsScreen.tsx# Directorio de alumnas
 │   │   ├── StudentDetail.tsx # Ficha alumna + historial + notas
 │   │   ├── FinanceScreen.tsx # Resumen financiero por mes; lista de meses con orden fijo; filas de sala son tapeables y abren sheet de edición
@@ -127,6 +127,19 @@ Paleta definida como variables CSS en `globals.css`:
 Tipografías:
 - **Cormorant Garamond** — títulos de pantalla (serif, elegante)
 - **DM Sans** — todo lo demás (sans-serif, legible)
+
+Jerarquía de botones:
+
+| Clase | Uso | Estilo |
+|---|---|---|
+| `btn-primary` | Acción más importante por vista (Guardar, Añadir, Confirmar) | Fondo terracota, una por pantalla/sheet |
+| `btn-secondary` | Acciones auxiliares de creación o apertura (+ Añadir alumna) | Lighter weight than primary — smaller padding, thinner border, lighter border color. Used for auxiliary actions in forms. Never competes visually with btn-primary. |
+| `btn-ghost` | Cancelar, Cerrar, Volver cuando es un botón | Sin borde, texto gris cálido |
+| `btn-destructive` | Acciones irreversibles (Eliminar) — reservado para uso futuro | Outline rojo tierra |
+
+Room selector pattern in class forms: when user clicks "+ Añadir sala", two input fields appear inline within the form — no second sheet is opened. On save, the new room is selected automatically and the inline form collapses. Shows only the inline form when no rooms exist yet.
+
+FAB is only visible when the active tab is 'home'. Hidden on alumnas and finanzas tabs.
 
 ---
 

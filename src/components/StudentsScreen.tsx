@@ -51,7 +51,7 @@ export default function StudentsScreen({ store, onOpenStudent }: Props) {
               )
             })}
           </div>
-          <button className="btn-primary" onClick={() => setShowNew(true)}>+ Nueva alumna</button>
+          <button className="btn-secondary" onClick={() => setShowNew(true)}>+ Nueva alumna</button>
         </div>
       </div>
 
@@ -63,7 +63,7 @@ export default function StudentsScreen({ store, onOpenStudent }: Props) {
         <label className="field-label">Notas (dolencias, nivel, alergias…)</label>
         <textarea className="field-input" rows={3} placeholder="Ej. Lesión en rodilla, principiante..." value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
         <button className="btn-primary" onClick={handleSave}>Guardar</button>
-        <button className="btn-secondary" onClick={() => setShowNew(false)}>Cancelar</button>
+        <button className="btn-ghost" onClick={() => setShowNew(false)}>Cancelar</button>
       </Sheet>
     </>
   )

@@ -95,10 +95,19 @@ html, body {
 .avatar { width: 36px; height: 36px; border-radius: 50%; background: #eef2e6; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; color: #4a5e2a; flex-shrink: 0; }
 
 /* ── Buttons ── */
-.btn-primary { width: 100%; background: var(--terracota); color: var(--cream); border: none; border-radius: 12px; padding: .9rem; font-size: 15px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background .15s; }
-.btn-primary:hover { background: var(--terracota-dark); }
-.btn-secondary { width: 100%; background: transparent; color: var(--olive); border: 1.5px solid var(--olive); border-radius: 12px; padding: .82rem; font-size: 14px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; margin-top: 8px; transition: background .15s; }
-.btn-secondary:hover { background: rgba(61,74,46,.06); }
+/* Level 1 — Primary: most important action, one per screen */
+.btn-primary { width: 100%; background: #b85c38; color: #f5f0e8; border: none; border-radius: 12px; padding: .9rem; font-size: 15px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background .15s; }
+.btn-primary:hover { background: #a04e2e; }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+/* Level 2 — Secondary: important but not the primary action */
+.btn-secondary { width: 100%; background: transparent; color: #3d4a2e; border: 1px solid #a8b89a; border-radius: 12px; padding: .65rem; font-size: 13px; font-weight: 400; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background .15s; }
+.btn-secondary:hover { background: rgba(61,74,46,.04); }
+/* Level 3 — Ghost: exit actions, cancel, close */
+.btn-ghost { width: 100%; background: none; border: none; color: #8a7a6a; font-size: 14px; font-weight: 400; cursor: pointer; font-family: 'DM Sans', sans-serif; padding: .75rem; transition: color .15s; }
+.btn-ghost:hover { color: #5a4a3a; }
+/* Level 4 — Destructive: irreversible actions only */
+.btn-destructive { width: 100%; background: none; border: 1.5px solid #9a3a1e; border-radius: 12px; color: #9a3a1e; font-size: 14px; font-weight: 500; cursor: pointer; font-family: 'DM Sans', sans-serif; padding: .75rem; transition: background .15s; }
+.btn-destructive:hover { background: rgba(154,58,30,.06); }
 
 /* ── Edit icon ── */
 .edit-btn { background: none; border: none; cursor: pointer; padding: 4px; position: absolute; right: 0; top: 0; }

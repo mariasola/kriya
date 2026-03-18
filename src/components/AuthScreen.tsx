@@ -45,7 +45,7 @@ export default function AuthScreen() {
             <button className="btn-primary" onClick={handleSubmit} disabled={loading} style={{ marginTop: 4 }}>
               {loading ? 'Cargando...' : mode === 'login' ? 'Entrar' : 'Crear cuenta'}
             </button>
-            <button className="btn-secondary" onClick={() => setMode(m => m === 'login' ? 'signup' : 'login')}>
+            <button className="btn-ghost" onClick={() => setMode(m => m === 'login' ? 'signup' : 'login')}>
               {mode === 'login' ? '¿Sin cuenta? Regístrate' : '¿Ya tienes cuenta? Entra'}
             </button>
           </>

@@ -85,7 +85,7 @@ export default function StudentDetail({ store, studentId, onBack }: Props) {
         <label className="field-label">Notas (dolencias, nivel, alergias…)</label>
         <textarea className="field-input" rows={3} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
         <button className="btn-primary" onClick={handleSave}>Guardar</button>
-        <button className="btn-secondary" onClick={() => setEditSheet(false)}>Cancelar</button>
+        <button className="btn-ghost" onClick={() => setEditSheet(false)}>Cancelar</button>
       </Sheet>
     </>
   )

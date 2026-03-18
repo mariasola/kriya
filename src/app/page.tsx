@@ -59,7 +59,7 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      {screen === 'home' && <HomeScreen store={store} onOpenClass={openClass} />}
+      {screen === 'home' && <HomeScreen store={store} onOpenClass={openClass} isActiveTab={tab === 'home'} />}
       {screen === 'class' && currentClassId && <ClassScreen store={store} classId={currentClassId} onBack={goBack} />}
       {screen === 'students' && <StudentsScreen store={store} onOpenStudent={openStudent} />}
       {screen === 'student-detail' && currentStudentId && <StudentDetail store={store} studentId={currentStudentId} onBack={goBack} />}

@@ -25,9 +25,14 @@ describe('getRevenue', () => {
     expect(getRevenue(20, [])).toBe(0)
   })
 
-  it('counts paid enrollment by total', () => {
-    const e = enrollment({ status: 'paid', total: 20 })
+  it('counts paid enrollment by classPrice', () => {
+    const e = enrollment({ status: 'paid' })
     expect(getRevenue(20, [e])).toBe(20)
+  })
+
+  it('uses classPrice for paid, not stored total', () => {
+    const e = enrollment({ status: 'paid', total: 20 })
+    expect(getRevenue(25, [e])).toBe(25)
   })
 
   it('counts deposit_paid enrollment by deposit only', () => {

@@ -2,7 +2,7 @@ import { Enrollment, EnrollmentStatus } from './types'
 
 export function getRevenue(classPrice: number, enrollments: Enrollment[]): number {
   return enrollments
-    .reduce((s, e) => s + (e.status === 'paid' ? e.total : e.status === 'deposit_paid' ? e.deposit : 0), 0)
+    .reduce((s, e) => s + (e.status === 'paid' ? classPrice : e.status === 'deposit_paid' ? e.deposit : 0), 0)
 }
 
 export function getPending(classPrice: number, enrollments: Enrollment[]): number {

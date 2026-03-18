@@ -49,11 +49,11 @@ kriya/
 │   ├── components/
 │   │   ├── AuthScreen.tsx    # Pantalla de login/signup
 │   │   ├── BottomNav.tsx     # Navegación inferior (Clases / Alumnas / Finanzas) + botón salir
-│   │   ├── HomeScreen.tsx    # Vista semanal de clases + FAB nueva clase
-│   │   ├── ClassScreen.tsx   # Detalle de clase, lista alumnas, cambio estado; sala usa toggle switch
+│   │   ├── HomeScreen.tsx    # Vista semanal de clases + FAB nueva clase; selector de sala incluye opción "Nueva sala" que abre sheet apilado
+│   │   ├── ClassScreen.tsx   # Detalle de clase, lista alumnas, cambio estado; sala usa toggle switch; selector de sala en edición incluye opción "Nueva sala" apilada
 │   │   ├── StudentsScreen.tsx# Directorio de alumnas
 │   │   ├── StudentDetail.tsx # Ficha alumna + historial + notas
-│   │   ├── FinanceScreen.tsx # Resumen financiero por mes; lista de meses con orden fijo (mes actual siempre primero)
+│   │   ├── FinanceScreen.tsx # Resumen financiero por mes; lista de meses con orden fijo; filas de sala son tapeables y abren sheet de edición
 │   │   └── Sheet.tsx         # Bottom sheet reutilizable
 │   ├── hooks/
 │   │   └── useStore.ts       # Estado global, todas las mutaciones de datos (async)

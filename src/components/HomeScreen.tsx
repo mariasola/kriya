@@ -13,10 +13,12 @@ function cap1(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }
 function toISO(d: Date) { return d.toISOString().split('T')[0] }
 
 export default function HomeScreen({ store, onOpenClass }: Props) {
-  const { data, loading, addClass } = store
+  const { data, loading, addClass, addRoom } = store
   const today = new Date()
   const [showNew, setShowNew] = useState(false)
   const [form, setForm] = useState({ name: '', date: toISO(today), time: '10:00', capacity: '8', roomCost: '', roomId: data.rooms[0]?.id || '' })
+  const [showNewRoom, setShowNewRoom] = useState(false)
+  const [roomForm, setRoomForm] = useState({ name: '', address: '' })
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, background: '#f5f0e8' }}>
@@ -114,11 +116,30 @@ export default function HomeScreen({ store, onOpenClass }: Props) {
         </div>
         <div style={{ height: 12 }} />
         <label className="field-label">Sala</label>
-        <select className="field-input" value={form.roomId} onChange={e => setForm(f => ({ ...f, roomId: e.target.value }))}>
+        <select className="field-input" value={form.roomId} onChange={e => {
+          if (e.target.value === '__new__') { setShowNewRoom(true); return }
+          setForm(f => ({ ...f, roomId: e.target.value }))
+        }}>
+          <option value="__new__">+ Nueva sala</option>
           {data.rooms.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
         <button className="btn-primary" onClick={handleSave}>Guardar clase</button>
         <button className="btn-secondary" onClick={() => setShowNew(false)}>Cancelar</button>
+      </Sheet>
+
+      <Sheet open={showNewRoom} onClose={() => { setShowNewRoom(false); setRoomForm({ name: '', address: '' }) }} title="Nueva sala">
+        <label className="field-label">Nombre</label>
+        <input className="field-input" placeholder="Ej. Espai Cos" value={roomForm.name} onChange={e => setRoomForm(f => ({ ...f, name: e.target.value }))} />
+        <label className="field-label">Dirección</label>
+        <input className="field-input" placeholder="Ej. Carrer Llull 42" value={roomForm.address} onChange={e => setRoomForm(f => ({ ...f, address: e.target.value }))} />
+        <button className="btn-primary" onClick={async () => {
+          if (!roomForm.name.trim()) return
+          const r = await addRoom(roomForm)
+          setForm(f => ({ ...f, roomId: r.id }))
+          setShowNewRoom(false)
+          setRoomForm({ name: '', address: '' })
+        }}>Guardar sala</button>
+        <button className="btn-secondary" onClick={() => { setShowNewRoom(false); setRoomForm({ name: '', address: '' }) }}>Cancelar</button>
       </Sheet>
     </>
   )

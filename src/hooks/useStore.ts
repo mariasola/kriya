@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { AppData, Student, Class, Room, Enrollment, EnrollmentStatus } from '@/lib/types'
 import {
-  loadData, createRoom, createStudent, updateStudent,
+  loadData, createRoom, updateRoom, createStudent, updateStudent,
   createClass, updateClass, createEnrollment, updateEnrollment,
   SESSION_PRICE
 } from '@/lib/data'
@@ -20,6 +20,17 @@ export function useStore() {
   }, [])
 
   useEffect(() => { reload() }, [reload])
+
+  const addRoom = async (room: Omit<Room, 'id'>) => {
+    const r = await createRoom(room)
+    await reload()
+    return r
+  }
+
+  const updateRoomItem = async (id: string, changes: Partial<Room>) => {
+    await updateRoom(id, changes)
+    await reload()
+  }
 
   const addClass = async (cls: Omit<Class, 'id'>) => {
     await createClass(cls)
@@ -62,6 +73,7 @@ export function useStore() {
 
   return {
     data, loading,
+    addRoom, updateRoom: updateRoomItem,
     addClass, updateClass: updateClassItem,
     addStudent, updateStudent: updateStudentItem,
     addEnrollment, setEnrollmentStatus,

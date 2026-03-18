@@ -21,7 +21,7 @@ function statusBadge(s: EnrollmentStatus, deposit: number) {
 }
 
 export default function ClassScreen({ store, classId, onBack }: Props) {
-  const { data, loading, updateClass, addEnrollment, setEnrollmentStatus, addStudent } = store
+  const { data, loading, updateClass, addEnrollment, setEnrollmentStatus, addStudent, addRoom } = store
   const cls = data.classes.find(c => c.id === classId)!
   const room = data.rooms.find(r => r.id === cls?.roomId)
   const ins = data.enrollments.filter(e => e.classId === classId)
@@ -31,6 +31,8 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
   const [editSheet, setEditSheet] = useState(false)
   const [addSheet, setAddSheet] = useState(false)
   const [statusSheet, setStatusSheet] = useState<string | null>(null)
+  const [showNewRoom, setShowNewRoom] = useState(false)
+  const [roomForm, setRoomForm] = useState({ name: '', address: '' })
   const [addInput, setAddInput] = useState('')
   const [selStudent, setSelStudent] = useState<string | null>(null)
   const [editForm, setEditForm] = useState({ name: cls?.name || '', date: cls?.date || '', time: cls?.time || '', capacity: String(cls?.capacity || 8), roomCost: String(cls?.roomCost || 0), roomId: cls?.roomId || '' })
@@ -135,11 +137,31 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
         </div>
         <div style={{ height: 12 }} />
         <label className="field-label">Sala</label>
-        <select className="field-input" value={editForm.roomId} onChange={e => setEditForm(f => ({ ...f, roomId: e.target.value }))}>
+        <select className="field-input" value={editForm.roomId} onChange={e => {
+          if (e.target.value === '__new__') { setShowNewRoom(true); return }
+          setEditForm(f => ({ ...f, roomId: e.target.value }))
+        }}>
+          <option value="__new__">+ Nueva sala</option>
           {data.rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
         </select>
         <button className="btn-primary" onClick={handleSaveEdit}>Guardar</button>
         <button className="btn-secondary" onClick={() => setEditSheet(false)}>Cancelar</button>
+      </Sheet>
+
+      {/* Sheet: nueva sala */}
+      <Sheet open={showNewRoom} onClose={() => { setShowNewRoom(false); setRoomForm({ name: '', address: '' }) }} title="Nueva sala">
+        <label className="field-label">Nombre</label>
+        <input className="field-input" placeholder="Ej. Espai Cos" value={roomForm.name} onChange={e => setRoomForm(f => ({ ...f, name: e.target.value }))} />
+        <label className="field-label">Dirección</label>
+        <input className="field-input" placeholder="Ej. Carrer Llull 42" value={roomForm.address} onChange={e => setRoomForm(f => ({ ...f, address: e.target.value }))} />
+        <button className="btn-primary" onClick={async () => {
+          if (!roomForm.name.trim()) return
+          const r = await addRoom(roomForm)
+          setEditForm(f => ({ ...f, roomId: r.id }))
+          setShowNewRoom(false)
+          setRoomForm({ name: '', address: '' })
+        }}>Guardar sala</button>
+        <button className="btn-secondary" onClick={() => { setShowNewRoom(false); setRoomForm({ name: '', address: '' }) }}>Cancelar</button>
       </Sheet>
 
       {/* Sheet: añadir alumna */}

@@ -9,11 +9,13 @@ interface Props { store: ReturnType<typeof useStore> }
 const MONTHS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
 
 export default function FinanceScreen({ store }: Props) {
-  const { data, loading } = store
+  const { data, loading, updateRoom } = store
   const today = new Date()
   const [selMonth, setSelMonth] = useState(today.getMonth())
   const selYear = today.getFullYear()
   const [pendSheet, setPendSheet] = useState(false)
+  const [editRoomId, setEditRoomId] = useState<string | null>(null)
+  const [roomEditForm, setRoomEditForm] = useState({ name: '', address: '' })
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, background: '#f5f0e8' }}>
@@ -99,7 +101,10 @@ export default function FinanceScreen({ store }: Props) {
                 {Object.entries(roomsUsed).map(([rid, v]) => {
                   const r = data.rooms.find(x => x.id === rid)
                   return (
-                    <div key={rid} className="card-row">
+                    <div key={rid} className="card-row" style={{ cursor: 'pointer' }} onClick={() => {
+                      setEditRoomId(rid)
+                      setRoomEditForm({ name: r?.name || '', address: r?.address || '' })
+                    }}>
                       <div>
                         <div style={{ fontSize: 14, fontWeight: 500, color: '#2a2a2a' }}>{r?.name || 'Sala'}</div>
                         <div style={{ fontSize: 12, color: '#8a7a6a' }}>{v.n} clase{v.n !== 1 ? 's' : ''}</div>
@@ -141,6 +146,19 @@ export default function FinanceScreen({ store }: Props) {
           )}
         </div>
       </div>
+
+      <Sheet open={!!editRoomId} onClose={() => setEditRoomId(null)} title="Editar sala">
+        <label className="field-label">Nombre</label>
+        <input className="field-input" value={roomEditForm.name} onChange={e => setRoomEditForm(f => ({ ...f, name: e.target.value }))} />
+        <label className="field-label">Dirección</label>
+        <input className="field-input" value={roomEditForm.address} onChange={e => setRoomEditForm(f => ({ ...f, address: e.target.value }))} />
+        <button className="btn-primary" onClick={async () => {
+          if (!roomEditForm.name.trim() || !editRoomId) return
+          await updateRoom(editRoomId, roomEditForm)
+          setEditRoomId(null)
+        }}>Guardar</button>
+        <button className="btn-secondary" onClick={() => setEditRoomId(null)}>Cancelar</button>
+      </Sheet>
 
       <Sheet open={pendSheet} onClose={() => setPendSheet(false)} title="Pendiente de cobrar">
         <div className="card">

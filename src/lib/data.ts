@@ -55,6 +55,13 @@ export async function createRoom(data: Omit<Room, 'id'>) {
   return mapRoom(row)
 }
 
+export async function updateRoom(id: string, changes: Partial<Room>) {
+  const { data: row } = await supabase.from('rooms')
+    .update({ name: changes.name, address: changes.address })
+    .eq('id', id).select().single()
+  return mapRoom(row)
+}
+
 // ── Students ───────────────────────────────────────────────────────────────
 
 export async function createStudent(data: Omit<Student, 'id'>) {

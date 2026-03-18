@@ -64,8 +64,9 @@ kriya/
 ├── public/
 │   ├── manifest.json         # PWA manifest
 │   ├── sw.js                 # Service worker (cache offline)
-│   ├── icon-192.png          # Icono PWA (hay que añadirlo manualmente)
-│   └── icon-512.png          # Icono PWA grande (hay que añadirlo manualmente)
+│   ├── favicon.ico           # Favicon navegador
+│   ├── icon-192.png          # Icono PWA 192×192 (fondo #3d4a2e, símbolo crema)
+│   └── icon-512.png          # Icono PWA 512×512
 ├── BUSINESS_RULES.md         # Lógica de negocio y flujos de usuario
 ├── CONTEXT.md                # Este archivo
 ├── next.config.js            # Config Next.js (output: export para static)
@@ -158,8 +159,8 @@ Tipografías:
 ### Android (Chrome)
 Chrome muestra automáticamente un banner de instalación.
 
-### Iconos pendientes
-Los archivos `icon-192.png` e `icon-512.png` en `/public` deben crearse manualmente. Tamaños: 192×192 y 512×512 px. Fondo `#3d4a2e`, símbolo en `#f0ebe0`.
+### Iconos
+Los archivos `icon-192.png`, `icon-512.png` y `favicon.ico` están en `/public`. Fondo `#3d4a2e`, símbolo en `#f5f0e8`.
 
 ---
 
@@ -167,7 +168,13 @@ Los archivos `icon-192.png` e `icon-512.png` en `/public` deben crearse manualme
 
 Push a rama `main` en GitHub → Vercel detecta el cambio → build automático → deploy.
 
-No hay tests configurados en MVP. Si se añaden, usar **Vitest** (compatible con Next.js sin configuración extra).
+Tests con **Vitest**. Ejecutar antes de cada commit:
+
+```bash
+npm test
+```
+
+Los tests cubren la lógica de negocio pura en `src/lib/calculations.ts`. Ver `BUSINESS_RULES.md` para la lista de reglas verificadas.
 
 ---
 

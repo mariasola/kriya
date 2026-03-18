@@ -1,22 +1,24 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { AppData, Student, Class, Room, Enrollment, EnrollmentStatus } from '@/lib/types'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { AppData, Student, Class, Room, EnrollmentStatus } from '@/lib/types'
 import {
   loadData, createRoom, updateRoom, createStudent, updateStudent,
   createClass, updateClass, createEnrollment, updateEnrollment,
-  SESSION_PRICE
 } from '@/lib/data'
+import { computeEnrollmentChanges } from '@/lib/calculations'
 
 export function useStore() {
   const [data, setData] = useState<AppData>({ rooms: [], students: [], classes: [], enrollments: [] })
   const [loading, setLoading] = useState(true)
+  const hasLoaded = useRef(false)
 
   const reload = useCallback(async () => {
-    setLoading(true)
+    if (!hasLoaded.current) setLoading(true)
     const d = await loadData()
     setData(d)
     setLoading(false)
+    hasLoaded.current = true
   }, [])
 
   useEffect(() => { reload() }, [reload])
@@ -63,10 +65,7 @@ export function useStore() {
   const setEnrollmentStatus = async (enrollmentId: string, status: EnrollmentStatus) => {
     const enrollment = data.enrollments.find(e => e.id === enrollmentId)
     if (!enrollment) return
-    const changes: Partial<Enrollment> = { status }
-    if (status === 'paid') changes.total = SESSION_PRICE
-    if (status === 'deposit_paid' && enrollment.deposit === 0) changes.deposit = 10
-    if (status === 'registered' || status === 'no_show') changes.total = 0
+    const changes = computeEnrollmentChanges(enrollment, status)
     await updateEnrollment(enrollmentId, changes)
     await reload()
   }

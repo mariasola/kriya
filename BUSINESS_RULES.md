@@ -103,6 +103,26 @@ sum(cobrado de todas las clases del mes)
 
 ---
 
+## Tests
+
+Ejecutar **antes de cada commit**:
+
+```bash
+npm test
+```
+
+Los tests verifican la lógica de dominio pura en `src/lib/calculations.ts`:
+
+| Función | Qué verifica |
+|---|---|
+| `getRevenue` | Solo suma `paid.total` y `deposit_paid.deposit`; ignora `registered` y `no_show`; filtra por `classId` |
+| `getPending` | `registered` = SESSION_PRICE; `deposit_paid` = SESSION_PRICE − depósito; `paid`/`no_show` = 0 |
+| `computeEnrollmentChanges` | `paid` → total = 20; `deposit_paid` sin depósito → deposit = 10; `registered`/`no_show` → total = 0 |
+| `getInitials` | Solo primeras dos palabras; mayúsculas |
+| `formatEur` | Añade símbolo € |
+
+---
+
 ## Futuras funcionalidades previstas (no implementadas)
 
 - **Bonos de sesiones:** N clases prepagadas, se descuentan con cada asistencia

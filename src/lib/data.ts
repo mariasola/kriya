@@ -1,7 +1,7 @@
 import { supabase } from './supabase'
 import { AppData, Room, Class, Student, Enrollment } from './types'
 
-export const SESSION_PRICE = 20
+export { SESSION_PRICE, getRevenue, getPending, getInitials, formatEur } from './calculations'
 
 // ── Mappers (snake_case DB → camelCase frontend) ───────────────────────────
 
@@ -127,26 +127,3 @@ export async function updateEnrollment(id: string, changes: Partial<Enrollment>)
   return mapEnrollment(row)
 }
 
-// ── Helpers ────────────────────────────────────────────────────────────────
-
-export function getRevenue(classId: string, enrollments: Enrollment[]): number {
-  return enrollments
-    .filter(e => e.classId === classId)
-    .reduce((s, e) => s + (e.status === 'paid' ? e.total : e.status === 'deposit_paid' ? e.deposit : 0), 0)
-}
-
-export function getPending(classId: string, enrollments: Enrollment[]): number {
-  return enrollments
-    .filter(e => e.classId === classId)
-    .reduce((s, e) => {
-      if (e.status === 'registered') return s + SESSION_PRICE
-      if (e.status === 'deposit_paid') return s + (SESSION_PRICE - e.deposit)
-      return s
-    }, 0)
-}
-
-export function getInitials(name: string): string {
-  return name.split(' ').slice(0, 2).map(x => x[0]).join('').toUpperCase()
-}
-
-export function formatEur(n: number): string { return `${n}€` }

@@ -122,7 +122,6 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
         </div>
       </div>
 
-      {/* Sheet: editar clase */}
       <Sheet open={editSheet} onClose={() => setEditSheet(false)} title="Editar clase">
         <label className="field-label">Nombre</label>
         <input className="field-input" value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} />
@@ -148,7 +147,6 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
         <button className="btn-secondary" onClick={() => setEditSheet(false)}>Cancelar</button>
       </Sheet>
 
-      {/* Sheet: nueva sala */}
       <Sheet open={showNewRoom} onClose={() => { setShowNewRoom(false); setRoomForm({ name: '', address: '' }) }} title="Nueva sala">
         <label className="field-label">Nombre</label>
         <input className="field-input" placeholder="Ej. Espai Cos" value={roomForm.name} onChange={e => setRoomForm(f => ({ ...f, name: e.target.value }))} />
@@ -164,7 +162,6 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
         <button className="btn-secondary" onClick={() => { setShowNewRoom(false); setRoomForm({ name: '', address: '' }) }}>Cancelar</button>
       </Sheet>
 
-      {/* Sheet: añadir alumna */}
       <Sheet open={addSheet} onClose={() => { setAddSheet(false); setAddInput(''); setSelStudent(null) }} title="Añadir alumna">
         <input className="field-input" placeholder="Nombre de la alumna..." value={addInput}
           onChange={e => { setAddInput(e.target.value); setSelStudent(null) }} />
@@ -182,7 +179,6 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
         <button className="btn-secondary" onClick={() => { setAddSheet(false); setAddInput(''); setSelStudent(null) }}>Cancelar</button>
       </Sheet>
 
-      {/* Sheet: cambiar estado */}
       {curEnrollment && curStudent && (
         <Sheet open={!!statusSheet} onClose={() => setStatusSheet(null)} title={curStudent.name}>
           {STATUS_OPTS.map(o => (

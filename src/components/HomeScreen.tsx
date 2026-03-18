@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useStore } from '@/hooks/useStore'
 import { getRevenue, getPending, formatEur } from '@/lib/data'
 import { Class } from '@/lib/types'
@@ -19,6 +19,12 @@ export default function HomeScreen({ store, onOpenClass }: Props) {
   const [form, setForm] = useState({ name: '', date: toISO(today), time: '10:00', capacity: '8', roomCost: '', roomId: data.rooms[0]?.id || '' })
   const [showNewRoom, setShowNewRoom] = useState(false)
   const [roomForm, setRoomForm] = useState({ name: '', address: '' })
+
+  useEffect(() => {
+    if (!form.roomId && data.rooms.length > 0) {
+      setForm(f => ({ ...f, roomId: data.rooms[0].id }))
+    }
+  }, [data.rooms])
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, background: '#f5f0e8' }}>

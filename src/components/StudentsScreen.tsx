@@ -6,10 +6,17 @@ import Sheet from './Sheet'
 
 interface Props { store: StudentsScreenStore; onOpenStudent: (id: string) => void }
 
+function isValidSpanishPhone(phone: string): boolean {
+  if (!phone) return true
+  const stripped = phone.replace(/[\s\-().]/g, '')
+  return /^(\+34|0034|34)?[6-9]\d{8}$/.test(stripped)
+}
+
 export default function StudentsScreen({ store, onOpenStudent }: Props) {
   const { data, loading, addStudent } = store
   const [showNew, setShowNew] = useState(false)
   const [form, setForm] = useState({ name: '', phone: '', notes: '' })
+  const [phoneError, setPhoneError] = useState('')
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, background: '#f5f0e8' }}>
@@ -22,6 +29,7 @@ export default function StudentsScreen({ store, onOpenStudent }: Props) {
     await addStudent(form)
     setShowNew(false)
     setForm({ name: '', phone: '', notes: '' })
+    setPhoneError('')
   }
 
   return (
@@ -59,7 +67,10 @@ export default function StudentsScreen({ store, onOpenStudent }: Props) {
         <label className="field-label">Nombre completo</label>
         <input className="field-input" placeholder="Nombre completo" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
         <label className="field-label">Teléfono</label>
-        <input className="field-input" placeholder="+34 600 000 000" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
+        <input className="field-input" placeholder="+34 600 000 000" value={form.phone}
+          onChange={e => { setForm(f => ({ ...f, phone: e.target.value })); setPhoneError('') }}
+          onBlur={e => { if (!isValidSpanishPhone(e.target.value)) setPhoneError('Teléfono no válido') }} />
+        {phoneError && <div style={{ fontSize: 12, color: '#9a3a1e', marginTop: -8, marginBottom: 8 }}>{phoneError}</div>}
         <label className="field-label">Notas (dolencias, nivel, alergias…)</label>
         <textarea className="field-input" rows={3} placeholder="Ej. Lesión en rodilla, principiante..." value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
         <button className="btn-primary" onClick={handleSave}>Guardar</button>

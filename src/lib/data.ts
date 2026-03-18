@@ -1,7 +1,7 @@
 import { supabase } from './supabase'
 import { AppData, Room, Class, Student, Enrollment } from './types'
 
-export { SESSION_PRICE, getRevenue, getPending, getInitials, formatEur } from './calculations'
+export { getRevenue, getPending, getInitials, formatEur } from './calculations'
 
 // ── Mappers (snake_case DB → camelCase frontend) ───────────────────────────
 
@@ -17,6 +17,7 @@ function mapClass(c: any): Class {
   return {
     id: c.id, name: c.name, date: c.date, time: c.time,
     roomId: c.room_id || '', capacity: c.capacity,
+    price: c.price ?? 20,
     roomCost: c.room_cost, roomPaid: c.room_paid
   }
 }
@@ -103,6 +104,7 @@ export async function createClass(data: Omit<Class, 'id'>): Promise<Class> {
     .insert({
       name: data.name, date: data.date, time: data.time,
       room_id: data.roomId, capacity: data.capacity,
+      price: data.price,
       room_cost: data.roomCost, room_paid: data.roomPaid,
       user_id: userId,
     }).select().single())
@@ -116,6 +118,7 @@ export async function updateClass(id: string, changes: Partial<Class>): Promise<
   if (changes.time !== undefined) update.time = changes.time
   if (changes.roomId !== undefined) update.room_id = changes.roomId
   if (changes.capacity !== undefined) update.capacity = changes.capacity
+  if (changes.price !== undefined) update.price = changes.price
   if (changes.roomCost !== undefined) update.room_cost = changes.roomCost
   if (changes.roomPaid !== undefined) update.room_paid = changes.roomPaid
   const row = unwrap(await supabase.from('classes')

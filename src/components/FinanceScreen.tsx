@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { FinanceScreenStore } from '@/hooks/useStore'
-import { getRevenue, getPending, formatEur, SESSION_PRICE } from '@/lib/data'
+import { getRevenue, getPending, formatEur } from '@/lib/data'
 import Sheet from './Sheet'
 
 interface Props { store: FinanceScreenStore }
@@ -31,10 +31,10 @@ export default function FinanceScreen({ store }: Props) {
     return f.getMonth() === selMonth && f.getFullYear() === selYear
   })
 
-  const ingresos = classesMes.reduce((s, c) => s + getRevenue(c.id, data.enrollments), 0)
+  const ingresos = classesMes.reduce((s, c) => s + getRevenue(c.price, data.enrollments.filter(e => e.classId === c.id)), 0)
   const gastos = classesMes.reduce((s, c) => s + c.roomCost, 0)
   const balance = ingresos - gastos
-  const pendiente = classesMes.reduce((s, c) => s + getPending(c.id, data.enrollments), 0)
+  const pendiente = classesMes.reduce((s, c) => s + getPending(c.price, data.enrollments.filter(e => e.classId === c.id)), 0)
 
   const pendMap: Record<string, number> = {}
   data.enrollments
@@ -43,7 +43,8 @@ export default function FinanceScreen({ store }: Props) {
       return c && (e.status === 'registered' || e.status === 'deposit_paid')
     })
     .forEach(e => {
-      const imp = e.status === 'registered' ? SESSION_PRICE : SESSION_PRICE - e.deposit
+      const c = classesMes.find(x => x.id === e.classId)
+      const imp = e.status === 'registered' ? (c?.price ?? 20) : (c?.price ?? 20) - e.deposit
       pendMap[e.studentId] = (pendMap[e.studentId] || 0) + imp
     })
   const nPend = Object.keys(pendMap).length
@@ -122,8 +123,8 @@ export default function FinanceScreen({ store }: Props) {
               <div className="dlbl" style={{ margin: '0 2px 8px' }}>Clases del mes</div>
               <div className="card">
                 {classesMes.map(c => {
-                  const co = getRevenue(c.id, data.enrollments)
-                  const pe = getPending(c.id, data.enrollments)
+                  const co = getRevenue(c.price, data.enrollments.filter(e => e.classId === c.id))
+                  const pe = getPending(c.price, data.enrollments.filter(e => e.classId === c.id))
                   const nIns = data.enrollments.filter(e => e.classId === c.id).length
                   return (
                     <div key={c.id} className="card-row">

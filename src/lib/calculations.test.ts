@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
 import {
-  SESSION_PRICE,
   getRevenue,
   getPending,
   computeEnrollmentChanges,
@@ -23,40 +22,34 @@ function enrollment(overrides: Partial<Enrollment>): Enrollment {
 
 describe('getRevenue', () => {
   it('returns 0 for empty enrollments', () => {
-    expect(getRevenue('c1', [])).toBe(0)
+    expect(getRevenue(20, [])).toBe(0)
   })
 
   it('counts paid enrollment by total', () => {
     const e = enrollment({ status: 'paid', total: 20 })
-    expect(getRevenue('c1', [e])).toBe(20)
+    expect(getRevenue(20, [e])).toBe(20)
   })
 
   it('counts deposit_paid enrollment by deposit only', () => {
     const e = enrollment({ status: 'deposit_paid', deposit: 10, total: 0 })
-    expect(getRevenue('c1', [e])).toBe(10)
+    expect(getRevenue(20, [e])).toBe(10)
   })
 
   it('ignores registered enrollment', () => {
     const e = enrollment({ status: 'registered' })
-    expect(getRevenue('c1', [e])).toBe(0)
+    expect(getRevenue(20, [e])).toBe(0)
   })
 
   it('ignores no_show enrollment', () => {
     const e = enrollment({ status: 'no_show', total: 0 })
-    expect(getRevenue('c1', [e])).toBe(0)
-  })
-
-  it('only counts enrollments for the given classId', () => {
-    const e1 = enrollment({ classId: 'c1', status: 'paid', total: 20 })
-    const e2 = enrollment({ id: 'e2', classId: 'c2', status: 'paid', total: 20 })
-    expect(getRevenue('c1', [e1, e2])).toBe(20)
+    expect(getRevenue(20, [e])).toBe(0)
   })
 
   it('sums mixed statuses correctly', () => {
     const paid = enrollment({ id: 'e1', status: 'paid', total: 20 })
     const dep = enrollment({ id: 'e2', status: 'deposit_paid', deposit: 10 })
     const reg = enrollment({ id: 'e3', status: 'registered' })
-    expect(getRevenue('c1', [paid, dep, reg])).toBe(30)
+    expect(getRevenue(20, [paid, dep, reg])).toBe(30)
   })
 })
 
@@ -64,67 +57,66 @@ describe('getRevenue', () => {
 
 describe('getPending', () => {
   it('returns 0 for empty enrollments', () => {
-    expect(getPending('c1', [])).toBe(0)
+    expect(getPending(20, [])).toBe(0)
   })
 
-  it('counts registered as full SESSION_PRICE', () => {
+  it('counts registered as full class price', () => {
     const e = enrollment({ status: 'registered' })
-    expect(getPending('c1', [e])).toBe(SESSION_PRICE)
+    expect(getPending(20, [e])).toBe(20)
   })
 
-  it('counts deposit_paid as SESSION_PRICE minus deposit', () => {
+  it('counts deposit_paid as price minus deposit', () => {
     const e = enrollment({ status: 'deposit_paid', deposit: 10 })
-    expect(getPending('c1', [e])).toBe(SESSION_PRICE - 10)
+    expect(getPending(20, [e])).toBe(10)
   })
 
   it('returns 0 for paid enrollment', () => {
     const e = enrollment({ status: 'paid', total: 20 })
-    expect(getPending('c1', [e])).toBe(0)
+    expect(getPending(20, [e])).toBe(0)
   })
 
   it('returns 0 for no_show enrollment', () => {
     const e = enrollment({ status: 'no_show' })
-    expect(getPending('c1', [e])).toBe(0)
+    expect(getPending(20, [e])).toBe(0)
   })
 
-  it('only counts enrollments for the given classId', () => {
-    const e1 = enrollment({ classId: 'c1', status: 'registered' })
-    const e2 = enrollment({ id: 'e2', classId: 'c2', status: 'registered' })
-    expect(getPending('c1', [e1, e2])).toBe(SESSION_PRICE)
+  it('uses classPrice correctly for non-standard price', () => {
+    const e = enrollment({ status: 'registered' })
+    expect(getPending(25, [e])).toBe(25)
   })
 })
 
 // ── computeEnrollmentChanges ───────────────────────────────────────────────
 
 describe('computeEnrollmentChanges', () => {
-  it('paid: sets total to SESSION_PRICE', () => {
+  it('paid: sets total to classPrice', () => {
     const e = enrollment({ status: 'registered' })
-    const changes = computeEnrollmentChanges(e, 'paid')
+    const changes = computeEnrollmentChanges(e, 'paid', 20)
     expect(changes.status).toBe('paid')
-    expect(changes.total).toBe(SESSION_PRICE)
+    expect(changes.total).toBe(20)
   })
 
   it('deposit_paid with no prior deposit: sets deposit to 10', () => {
     const e = enrollment({ status: 'registered', deposit: 0 })
-    const changes = computeEnrollmentChanges(e, 'deposit_paid')
+    const changes = computeEnrollmentChanges(e, 'deposit_paid', 20)
     expect(changes.deposit).toBe(10)
   })
 
   it('deposit_paid with existing deposit: keeps existing deposit', () => {
     const e = enrollment({ status: 'deposit_paid', deposit: 15 })
-    const changes = computeEnrollmentChanges(e, 'deposit_paid')
+    const changes = computeEnrollmentChanges(e, 'deposit_paid', 20)
     expect(changes.deposit).toBeUndefined()
   })
 
   it('registered: sets total to 0', () => {
     const e = enrollment({ status: 'paid', total: 20 })
-    const changes = computeEnrollmentChanges(e, 'registered')
+    const changes = computeEnrollmentChanges(e, 'registered', 20)
     expect(changes.total).toBe(0)
   })
 
   it('no_show: sets total to 0', () => {
     const e = enrollment({ status: 'paid', total: 20 })
-    const changes = computeEnrollmentChanges(e, 'no_show')
+    const changes = computeEnrollmentChanges(e, 'no_show', 20)
     expect(changes.total).toBe(0)
   })
 })

@@ -13,6 +13,7 @@ export interface Class {
   time: string       // HH:MM
   roomId: string
   capacity: number
+  price: number
   roomCost: number
   roomPaid: boolean
 }

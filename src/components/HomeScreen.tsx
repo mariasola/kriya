@@ -16,7 +16,7 @@ export default function HomeScreen({ store, onOpenClass, isActiveTab }: Props) {
   const { data, loading, addClass, addRoom } = store
   const today = new Date()
   const [showNew, setShowNew] = useState(false)
-  const [form, setForm] = useState({ name: '', date: toISO(today), time: '10:00', capacity: '8', roomCost: '', roomId: '' })
+  const [form, setForm] = useState({ name: '', date: toISO(today), time: '10:00', capacity: '8', price: '20', roomCost: '', roomId: '' })
   const [showInlineRoom, setShowInlineRoom] = useState(false)
   const [inlineRoomName, setInlineRoomName] = useState('')
   const [inlineRoomAddress, setInlineRoomAddress] = useState('')
@@ -36,8 +36,8 @@ export default function HomeScreen({ store, onOpenClass, isActiveTab }: Props) {
   const ws = new Date(today); ws.setDate(today.getDate() - today.getDay() + 1)
   const we = new Date(ws); we.setDate(ws.getDate() + 6)
   const thisWeek = data.classes.filter(c => { const f = new Date(c.date + 'T12:00:00'); return f >= ws && f <= we })
-  const cobrado = thisWeek.reduce((s, c) => s + getRevenue(c.id, data.enrollments), 0)
-  const pendiente = thisWeek.reduce((s, c) => s + getPending(c.id, data.enrollments), 0)
+  const cobrado = thisWeek.reduce((s, c) => s + getRevenue(c.price, data.enrollments.filter(e => e.classId === c.id)), 0)
+  const pendiente = thisWeek.reduce((s, c) => s + getPending(c.price, data.enrollments.filter(e => e.classId === c.id)), 0)
 
   const sorted = [...data.classes].sort((a, b) => a.date.localeCompare(b.date))
   const grouped: Record<string, Class[]> = {}
@@ -51,9 +51,9 @@ export default function HomeScreen({ store, onOpenClass, isActiveTab }: Props) {
 
   async function handleSave() {
     if (!form.name || !form.date || !form.roomId) return
-    await addClass({ name: form.name, date: form.date, time: form.time, roomId: form.roomId, capacity: parseInt(form.capacity) || 8, roomCost: parseInt(form.roomCost) || 0, roomPaid: false })
+    await addClass({ name: form.name, date: form.date, time: form.time, roomId: form.roomId, capacity: parseInt(form.capacity) || 8, price: parseInt(form.price) || 20, roomCost: parseInt(form.roomCost) || 0, roomPaid: false })
     setShowNew(false)
-    setForm({ name: '', date: toISO(today), time: '10:00', capacity: '8', roomCost: '', roomId: data.rooms[0]?.id || '' })
+    setForm({ name: '', date: toISO(today), time: '10:00', capacity: '8', price: '20', roomCost: '', roomId: data.rooms[0]?.id || '' })
   }
 
   return (
@@ -121,7 +121,12 @@ export default function HomeScreen({ store, onOpenClass, isActiveTab }: Props) {
         <div style={{ height: 12 }} />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           <div><label className="field-label">Capacidad</label><input className="field-input" type="number" value={form.capacity} onChange={e => setForm(f => ({ ...f, capacity: e.target.value }))} style={{ marginBottom: 0 }} /></div>
+          <div><label className="field-label">Precio clase (€)</label><input className="field-input" type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} style={{ marginBottom: 0 }} /></div>
+        </div>
+        <div style={{ height: 12 }} />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           <div><label className="field-label">Coste sala (€)</label><input className="field-input" type="number" value={form.roomCost} onChange={e => setForm(f => ({ ...f, roomCost: e.target.value }))} style={{ marginBottom: 0 }} /></div>
+          <div />
         </div>
         <div style={{ height: 12 }} />
         <label className="field-label">Sala</label>

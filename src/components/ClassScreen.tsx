@@ -25,15 +25,15 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
   const cls = data.classes.find(c => c.id === classId)!
   const room = data.rooms.find(r => r.id === cls?.roomId)
   const ins = data.enrollments.filter(e => e.classId === classId)
-  const cobrado = getRevenue(classId, data.enrollments)
-  const pendiente = getPending(classId, data.enrollments)
+  const cobrado = getRevenue(cls?.price ?? 20, ins)
+  const pendiente = getPending(cls?.price ?? 20, ins)
 
   const [editSheet, setEditSheet] = useState(false)
   const [addSheet, setAddSheet] = useState(false)
   const [statusSheet, setStatusSheet] = useState<string | null>(null)
   const [addInput, setAddInput] = useState('')
   const [selStudent, setSelStudent] = useState<string | null>(null)
-  const [editForm, setEditForm] = useState({ name: cls?.name || '', date: cls?.date || '', time: cls?.time || '', capacity: String(cls?.capacity || 8), roomCost: String(cls?.roomCost || 0), roomId: cls?.roomId || '' })
+  const [editForm, setEditForm] = useState({ name: cls?.name || '', date: cls?.date || '', time: cls?.time || '', capacity: String(cls?.capacity || 8), price: String(cls?.price || 20), roomCost: String(cls?.roomCost || 0), roomId: cls?.roomId || '' })
   const [showInlineRoom, setShowInlineRoom] = useState(false)
   const [inlineRoomName, setInlineRoomName] = useState('')
   const [inlineRoomAddress, setInlineRoomAddress] = useState('')
@@ -48,7 +48,7 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
   const suggestions = data.students.filter(s => s.name.toLowerCase().includes(addInput.toLowerCase()) && !existingIds.includes(s.id))
 
   async function handleSaveEdit() {
-    await updateClass(classId, { name: editForm.name, date: editForm.date, time: editForm.time, capacity: parseInt(editForm.capacity) || 8, roomCost: parseInt(editForm.roomCost) || 0, roomId: editForm.roomId })
+    await updateClass(classId, { name: editForm.name, date: editForm.date, time: editForm.time, capacity: parseInt(editForm.capacity) || 8, price: parseInt(editForm.price) || 20, roomCost: parseInt(editForm.roomCost) || 0, roomId: editForm.roomId })
     setEditSheet(false)
   }
 
@@ -78,7 +78,7 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
           <div style={{ position: 'relative' }}>
             <div className="hdr-lbl">{new Date(cls.date + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })} · {cls.time}</div>
             <div className="hdr-title">{cls.name}{room && <small>{room.name} · {room.address}</small>}</div>
-            <button className="edit-btn" onClick={() => { setEditForm({ name: cls.name, date: cls.date, time: cls.time, capacity: String(cls.capacity), roomCost: String(cls.roomCost), roomId: cls.roomId }); setShowInlineRoom(false); setEditSheet(true) }}>
+            <button className="edit-btn" onClick={() => { setEditForm({ name: cls.name, date: cls.date, time: cls.time, capacity: String(cls.capacity), price: String(cls.price), roomCost: String(cls.roomCost), roomId: cls.roomId }); setShowInlineRoom(false); setEditSheet(true) }}>
               <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </button>
           </div>
@@ -133,7 +133,12 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
         <div style={{ height: 12 }} />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           <div><label className="field-label">Capacidad</label><input className="field-input" type="number" value={editForm.capacity} onChange={e => setEditForm(f => ({ ...f, capacity: e.target.value }))} style={{ marginBottom: 0 }} /></div>
+          <div><label className="field-label">Precio clase (€)</label><input className="field-input" type="number" value={editForm.price} onChange={e => setEditForm(f => ({ ...f, price: e.target.value }))} style={{ marginBottom: 0 }} /></div>
+        </div>
+        <div style={{ height: 12 }} />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           <div><label className="field-label">Coste sala (€)</label><input className="field-input" type="number" value={editForm.roomCost} onChange={e => setEditForm(f => ({ ...f, roomCost: e.target.value }))} style={{ marginBottom: 0 }} /></div>
+          <div />
         </div>
         <div style={{ height: 12 }} />
         <label className="field-label">Sala</label>
@@ -176,12 +181,16 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
           onChange={e => { setAddInput(e.target.value); setSelStudent(null) }} />
         {addInput.length > 0 && suggestions.map(s => (
           <div key={s.id} onClick={() => { setSelStudent(s.id); setAddInput(s.name) }}
-            style={{ padding: '9px 12px', borderRadius: 8, cursor: 'pointer', fontSize: 14, color: '#2a2a2a', background: '#faf8f4', marginBottom: 4, border: '.5px solid #e8e0d0' }}>
-            {s.name}
+            style={{ padding: '9px 12px', borderRadius: 8, cursor: 'pointer', background: '#faf8f4', marginBottom: 4, border: '.5px solid #e8e0d0' }}>
+            <div style={{ fontSize: 14, fontWeight: 500, color: '#2a2a2a' }}>{s.name}</div>
+            {s.phone && <div style={{ fontSize: 12, color: '#8a7a6a', marginTop: 1 }}>{s.phone}</div>}
           </div>
         ))}
         {addInput.length > 2 && suggestions.length === 0 && (
-          <div style={{ padding: '9px 12px', fontSize: 13, color: '#8a7a6a' }}>Crear nueva: <strong>{addInput}</strong></div>
+          <div style={{ padding: '9px 12px', borderRadius: 8, background: '#f5f0e8', marginBottom: 4, border: '.5px solid #e8e0d0' }}>
+            <div style={{ fontSize: 11, color: '#8a7a6a', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 2 }}>Crear alumna</div>
+            <div style={{ fontSize: 14, fontWeight: 500, color: '#2a2a2a' }}>{addInput}</div>
+          </div>
         )}
         <div style={{ height: 8 }} />
         <button className="btn-primary" onClick={handleAddStudent}>Añadir</button>

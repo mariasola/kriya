@@ -140,8 +140,9 @@ export function useStore() {
   const setEnrollmentStatus = async (enrollmentId: string, status: EnrollmentStatus) => {
     const enrollment = data.enrollments.find(e => e.id === enrollmentId)
     if (!enrollment) return
+    const cls = data.classes.find(c => c.id === enrollment.classId)
     try {
-      const changes = computeEnrollmentChanges(enrollment, status)
+      const changes = computeEnrollmentChanges(enrollment, status, cls?.price ?? 20)
       await updateEnrollment(enrollmentId, changes)
       await reload()
     } catch (e) {

@@ -14,7 +14,8 @@ Aplicación de gestión de clases de yoga para uso personal de una profesora fre
 ### Class (Clase)
 - Tiene nombre libre (ej. "Hatha mañana", "Yin yoga")
 - Pertenece a una Room
-- Tiene fecha, hora, capacidad máxima y coste de sala para esa sesión
+- Tiene fecha, hora, capacidad máxima, precio de clase y coste de sala para esa sesión
+- El precio de clase (`price`) es editable por sesión — por defecto 20€
 - El coste de sala es editable por sesión (puede variar aunque sea la misma sala)
 - El estado de pago de la sala (`roomPaid`) es independiente del estado de los alumnos
 - Una clase puede tener 0 alumnas inscritas
@@ -46,9 +47,9 @@ Aplicación de gestión de clases de yoga para uso personal de una profesora fre
 
 ## Precio de clase
 
-- El precio estándar por sesión es **20€** (constante `SESSION_PRICE` en `src/lib/data.ts`)
-- Este precio se usa para calcular pendientes cuando el estado es `registered`
-- Cuando se implementen bonos o mensualidades, este campo deberá volverse variable por alumna/clase
+- El precio se define **por clase** en el campo `price` (por defecto 20€)
+- Este precio se usa para calcular pendientes cuando el estado es `registered` o `deposit_paid`
+- `getRevenue(classPrice, enrollments)` y `getPending(classPrice, enrollments)` reciben el precio de la clase y los enrollments ya filtrados por classId
 
 ---
 
@@ -62,8 +63,8 @@ sum(total) para status = 'paid'
 
 ### Pendiente (por clase)
 ```
-sum(SESSION_PRICE) para status = 'registered'
-+ sum(SESSION_PRICE - deposit) para status = 'deposit_paid'
+sum(price) para status = 'registered'
++ sum(price - deposit) para status = 'deposit_paid'
 ```
 
 ### Balance neto (por mes)
@@ -115,9 +116,9 @@ Los tests verifican la lógica de dominio pura en `src/lib/calculations.ts`:
 
 | Función | Qué verifica |
 |---|---|
-| `getRevenue` | Solo suma `paid.total` y `deposit_paid.deposit`; ignora `registered` y `no_show`; filtra por `classId` |
-| `getPending` | `registered` = SESSION_PRICE; `deposit_paid` = SESSION_PRICE − depósito; `paid`/`no_show` = 0 |
-| `computeEnrollmentChanges` | `paid` → total = 20; `deposit_paid` sin depósito → deposit = 10; `registered`/`no_show` → total = 0 |
+| `getRevenue` | Solo suma `paid.total` y `deposit_paid.deposit`; ignora `registered` y `no_show`; el filtrado por classId lo hace el caller |
+| `getPending` | `registered` = classPrice; `deposit_paid` = classPrice − depósito; `paid`/`no_show` = 0 |
+| `computeEnrollmentChanges` | `paid` → total = classPrice; `deposit_paid` sin depósito → deposit = 10; `registered`/`no_show` → total = 0 |
 | `getInitials` | Solo primeras dos palabras; mayúsculas |
 | `formatEur` | Añade símbolo € |
 

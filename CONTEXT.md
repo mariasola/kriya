@@ -82,7 +82,7 @@ kriya/
 
 ```ts
 Room       { id, name, address }
-Class      { id, name, date, time, roomId, capacity, roomCost, roomPaid }
+Class      { id, name, date, time, roomId, capacity, price, roomCost, roomPaid }
 Student    { id, name, phone, notes }
 Enrollment { id, classId, studentId, status, deposit, total }
 ```

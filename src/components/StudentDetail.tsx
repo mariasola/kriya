@@ -13,12 +13,19 @@ function statusBadge(s: EnrollmentStatus, deposit: number) {
   return <span className={`badge ${map[s]}`}>{label}</span>
 }
 
+function isValidSpanishPhone(phone: string): boolean {
+  if (!phone) return true
+  const stripped = phone.replace(/[\s\-().]/g, '')
+  return /^(\+34|0034|34)?[6-9]\d{8}$/.test(stripped)
+}
+
 export default function StudentDetail({ store, studentId, onBack }: Props) {
   const { data, loading, updateStudent } = store
   const student = data.students.find(s => s.id === studentId)!
   const ins = data.enrollments.filter(e => e.studentId === studentId)
   const [editSheet, setEditSheet] = useState(false)
   const [form, setForm] = useState({ name: student?.name || '', phone: student?.phone || '', notes: student?.notes || '' })
+  const [phoneError, setPhoneError] = useState('')
 
   if (loading || !student) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, background: '#f5f0e8' }}>
@@ -30,6 +37,7 @@ export default function StudentDetail({ store, studentId, onBack }: Props) {
     if (!form.name.trim()) return
     await updateStudent(studentId, form)
     setEditSheet(false)
+    setPhoneError('')
   }
 
   return (
@@ -81,7 +89,10 @@ export default function StudentDetail({ store, studentId, onBack }: Props) {
         <label className="field-label">Nombre completo</label>
         <input className="field-input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
         <label className="field-label">Teléfono</label>
-        <input className="field-input" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
+        <input className="field-input" value={form.phone}
+          onChange={e => { setForm(f => ({ ...f, phone: e.target.value })); setPhoneError('') }}
+          onBlur={e => { if (!isValidSpanishPhone(e.target.value)) setPhoneError('Teléfono no válido') }} />
+        {phoneError && <div style={{ fontSize: 12, color: '#9a3a1e', marginTop: -8, marginBottom: 8 }}>{phoneError}</div>}
         <label className="field-label">Notas (dolencias, nivel, alergias…)</label>
         <textarea className="field-input" rows={3} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
         <button className="btn-primary" onClick={handleSave}>Guardar</button>

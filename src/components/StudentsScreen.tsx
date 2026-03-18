@@ -1,10 +1,10 @@
 'use client'
 import { useState } from 'react'
-import { useStore } from '@/hooks/useStore'
+import { StudentsScreenStore } from '@/hooks/useStore'
 import { getInitials } from '@/lib/data'
 import Sheet from './Sheet'
 
-interface Props { store: ReturnType<typeof useStore>; onOpenStudent: (id: string) => void }
+interface Props { store: StudentsScreenStore; onOpenStudent: (id: string) => void }
 
 export default function StudentsScreen({ store, onOpenStudent }: Props) {
   const { data, loading, addStudent } = store

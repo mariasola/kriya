@@ -1,11 +1,12 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { useStore } from '@/hooks/useStore'
+import { HomeScreenStore } from '@/hooks/useStore'
 import { getRevenue, getPending, formatEur } from '@/lib/data'
 import { Class } from '@/lib/types'
 import Sheet from './Sheet'
+import RoomSelector from './RoomSelector'
 
-interface Props { store: ReturnType<typeof useStore>; onOpenClass: (id: string) => void }
+interface Props { store: HomeScreenStore; onOpenClass: (id: string) => void }
 
 function addDays(d: Date, n: number) { const r = new Date(d); r.setDate(r.getDate() + n); return r }
 function sameDay(a: Date, b: Date) { return a.toDateString() === b.toDateString() }
@@ -16,9 +17,7 @@ export default function HomeScreen({ store, onOpenClass }: Props) {
   const { data, loading, addClass, addRoom } = store
   const today = new Date()
   const [showNew, setShowNew] = useState(false)
-  const [form, setForm] = useState({ name: '', date: toISO(today), time: '10:00', capacity: '8', roomCost: '', roomId: data.rooms[0]?.id || '' })
-  const [showNewRoom, setShowNewRoom] = useState(false)
-  const [roomForm, setRoomForm] = useState({ name: '', address: '' })
+  const [form, setForm] = useState({ name: '', date: toISO(today), time: '10:00', capacity: '8', roomCost: '', roomId: '' })
 
   useEffect(() => {
     if (!form.roomId && data.rooms.length > 0) {
@@ -49,10 +48,8 @@ export default function HomeScreen({ store, onOpenClass }: Props) {
   const keys = Object.keys(grouped).filter(k => new Date(grouped[k][0].date + 'T12:00:00') >= addDays(today, -1))
 
   async function handleSave() {
-    if (!form.name || !form.date) return
-    const roomId = form.roomId && form.roomId !== '__new__' ? form.roomId : data.rooms[0]?.id
-    if (!roomId) { setShowNewRoom(true); return }
-    await addClass({ name: form.name, date: form.date, time: form.time, roomId, capacity: parseInt(form.capacity) || 8, roomCost: parseInt(form.roomCost) || 0, roomPaid: false })
+    if (!form.name || !form.date || !form.roomId) return
+    await addClass({ name: form.name, date: form.date, time: form.time, roomId: form.roomId, capacity: parseInt(form.capacity) || 8, roomCost: parseInt(form.roomCost) || 0, roomPaid: false })
     setShowNew(false)
     setForm({ name: '', date: toISO(today), time: '10:00', capacity: '8', roomCost: '', roomId: data.rooms[0]?.id || '' })
   }
@@ -123,31 +120,14 @@ export default function HomeScreen({ store, onOpenClass }: Props) {
           <div><label className="field-label">Coste sala (€)</label><input className="field-input" type="number" value={form.roomCost} onChange={e => setForm(f => ({ ...f, roomCost: e.target.value }))} style={{ marginBottom: 0 }} /></div>
         </div>
         <div style={{ height: 12 }} />
-        <label className="field-label">Sala</label>
-        <select className="field-input" value={form.roomId || '__new__'} onChange={e => {
-          if (e.target.value === '__new__') { setShowNewRoom(true); return }
-          setForm(f => ({ ...f, roomId: e.target.value }))
-        }}>
-          <option value="__new__">+ Nueva sala</option>
-          {data.rooms.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-        </select>
+        <RoomSelector
+          rooms={data.rooms}
+          value={form.roomId}
+          onChange={roomId => setForm(f => ({ ...f, roomId }))}
+          addRoom={addRoom}
+        />
         <button className="btn-primary" onClick={handleSave}>Guardar clase</button>
         <button className="btn-secondary" onClick={() => setShowNew(false)}>Cancelar</button>
-      </Sheet>
-
-      <Sheet open={showNewRoom} onClose={() => { setShowNewRoom(false); setRoomForm({ name: '', address: '' }) }} title="Nueva sala">
-        <label className="field-label">Nombre</label>
-        <input className="field-input" placeholder="Ej. Espai Cos" value={roomForm.name} onChange={e => setRoomForm(f => ({ ...f, name: e.target.value }))} />
-        <label className="field-label">Dirección</label>
-        <input className="field-input" placeholder="Ej. Carrer Llull 42" value={roomForm.address} onChange={e => setRoomForm(f => ({ ...f, address: e.target.value }))} />
-        <button className="btn-primary" onClick={async () => {
-          if (!roomForm.name.trim()) return
-          const r = await addRoom(roomForm)
-          setForm(f => ({ ...f, roomId: r.id }))
-          setShowNewRoom(false)
-          setRoomForm({ name: '', address: '' })
-        }}>Guardar sala</button>
-        <button className="btn-secondary" onClick={() => { setShowNewRoom(false); setRoomForm({ name: '', address: '' }) }}>Cancelar</button>
       </Sheet>
     </>
   )

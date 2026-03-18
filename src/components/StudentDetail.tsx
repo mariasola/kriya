@@ -1,11 +1,11 @@
 'use client'
 import { useState } from 'react'
-import { useStore } from '@/hooks/useStore'
+import { StudentDetailStore } from '@/hooks/useStore'
 import { getInitials } from '@/lib/data'
 import { EnrollmentStatus } from '@/lib/types'
 import Sheet from './Sheet'
 
-interface Props { store: ReturnType<typeof useStore>; studentId: string; onBack: () => void }
+interface Props { store: StudentDetailStore; studentId: string; onBack: () => void }
 
 function statusBadge(s: EnrollmentStatus, deposit: number) {
   const map = { paid: 'badge-paid', deposit_paid: 'badge-reserva', registered: 'badge-apuntada', no_show: 'badge-novino' }

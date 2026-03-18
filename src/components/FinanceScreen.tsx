@@ -1,10 +1,10 @@
 'use client'
 import { useState } from 'react'
-import { useStore } from '@/hooks/useStore'
+import { FinanceScreenStore } from '@/hooks/useStore'
 import { getRevenue, getPending, formatEur, SESSION_PRICE } from '@/lib/data'
 import Sheet from './Sheet'
 
-interface Props { store: ReturnType<typeof useStore> }
+interface Props { store: FinanceScreenStore }
 
 const MONTHS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
 

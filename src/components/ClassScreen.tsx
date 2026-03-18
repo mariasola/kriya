@@ -1,11 +1,12 @@
 'use client'
 import { useState } from 'react'
-import { useStore } from '@/hooks/useStore'
+import { ClassScreenStore } from '@/hooks/useStore'
 import { getRevenue, getPending, getInitials, formatEur } from '@/lib/data'
 import { EnrollmentStatus } from '@/lib/types'
 import Sheet from './Sheet'
+import RoomSelector from './RoomSelector'
 
-interface Props { store: ReturnType<typeof useStore>; classId: string; onBack: () => void }
+interface Props { store: ClassScreenStore; classId: string; onBack: () => void }
 
 const STATUS_OPTS: { v: EnrollmentStatus; l: string; c: string }[] = [
   { v: 'registered', l: 'Apuntada', c: 'badge-apuntada' },
@@ -31,8 +32,6 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
   const [editSheet, setEditSheet] = useState(false)
   const [addSheet, setAddSheet] = useState(false)
   const [statusSheet, setStatusSheet] = useState<string | null>(null)
-  const [showNewRoom, setShowNewRoom] = useState(false)
-  const [roomForm, setRoomForm] = useState({ name: '', address: '' })
   const [addInput, setAddInput] = useState('')
   const [selStudent, setSelStudent] = useState<string | null>(null)
   const [editForm, setEditForm] = useState({ name: cls?.name || '', date: cls?.date || '', time: cls?.time || '', capacity: String(cls?.capacity || 8), roomCost: String(cls?.roomCost || 0), roomId: cls?.roomId || '' })
@@ -135,31 +134,14 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
           <div><label className="field-label">Coste sala (€)</label><input className="field-input" type="number" value={editForm.roomCost} onChange={e => setEditForm(f => ({ ...f, roomCost: e.target.value }))} style={{ marginBottom: 0 }} /></div>
         </div>
         <div style={{ height: 12 }} />
-        <label className="field-label">Sala</label>
-        <select className="field-input" value={editForm.roomId} onChange={e => {
-          if (e.target.value === '__new__') { setShowNewRoom(true); return }
-          setEditForm(f => ({ ...f, roomId: e.target.value }))
-        }}>
-          <option value="__new__">+ Nueva sala</option>
-          {data.rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-        </select>
+        <RoomSelector
+          rooms={data.rooms}
+          value={editForm.roomId}
+          onChange={roomId => setEditForm(f => ({ ...f, roomId }))}
+          addRoom={addRoom}
+        />
         <button className="btn-primary" onClick={handleSaveEdit}>Guardar</button>
         <button className="btn-secondary" onClick={() => setEditSheet(false)}>Cancelar</button>
-      </Sheet>
-
-      <Sheet open={showNewRoom} onClose={() => { setShowNewRoom(false); setRoomForm({ name: '', address: '' }) }} title="Nueva sala">
-        <label className="field-label">Nombre</label>
-        <input className="field-input" placeholder="Ej. Espai Cos" value={roomForm.name} onChange={e => setRoomForm(f => ({ ...f, name: e.target.value }))} />
-        <label className="field-label">Dirección</label>
-        <input className="field-input" placeholder="Ej. Carrer Llull 42" value={roomForm.address} onChange={e => setRoomForm(f => ({ ...f, address: e.target.value }))} />
-        <button className="btn-primary" onClick={async () => {
-          if (!roomForm.name.trim()) return
-          const r = await addRoom(roomForm)
-          setEditForm(f => ({ ...f, roomId: r.id }))
-          setShowNewRoom(false)
-          setRoomForm({ name: '', address: '' })
-        }}>Guardar sala</button>
-        <button className="btn-secondary" onClick={() => { setShowNewRoom(false); setRoomForm({ name: '', address: '' }) }}>Cancelar</button>
       </Sheet>
 
       <Sheet open={addSheet} onClose={() => { setAddSheet(false); setAddInput(''); setSelStudent(null) }} title="Añadir alumna">

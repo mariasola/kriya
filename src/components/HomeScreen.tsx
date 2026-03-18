@@ -44,7 +44,9 @@ export default function HomeScreen({ store, onOpenClass }: Props) {
 
   async function handleSave() {
     if (!form.name || !form.date) return
-    await addClass({ name: form.name, date: form.date, time: form.time, roomId: form.roomId || data.rooms[0]?.id, capacity: parseInt(form.capacity) || 8, roomCost: parseInt(form.roomCost) || 0, roomPaid: false })
+    const roomId = form.roomId && form.roomId !== '__new__' ? form.roomId : data.rooms[0]?.id
+    if (!roomId) { setShowNewRoom(true); return }
+    await addClass({ name: form.name, date: form.date, time: form.time, roomId, capacity: parseInt(form.capacity) || 8, roomCost: parseInt(form.roomCost) || 0, roomPaid: false })
     setShowNew(false)
     setForm({ name: '', date: toISO(today), time: '10:00', capacity: '8', roomCost: '', roomId: data.rooms[0]?.id || '' })
   }
@@ -116,7 +118,7 @@ export default function HomeScreen({ store, onOpenClass }: Props) {
         </div>
         <div style={{ height: 12 }} />
         <label className="field-label">Sala</label>
-        <select className="field-input" value={form.roomId} onChange={e => {
+        <select className="field-input" value={form.roomId || '__new__'} onChange={e => {
           if (e.target.value === '__new__') { setShowNewRoom(true); return }
           setForm(f => ({ ...f, roomId: e.target.value }))
         }}>

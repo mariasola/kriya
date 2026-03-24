@@ -4,11 +4,11 @@ import { FinanceScreenStore } from '@/hooks/useStore'
 import { getRevenue, getPending, formatEur } from '@/lib/data'
 import Sheet from './Sheet'
 
-interface Props { store: FinanceScreenStore }
+interface Props { store: FinanceScreenStore; onOpenClass: (id: string) => void }
 
 const MONTHS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
 
-export default function FinanceScreen({ store }: Props) {
+export default function FinanceScreen({ store, onOpenClass }: Props) {
   const { data, loading, updateRoom } = store
   const today = new Date()
   const [selMonth, setSelMonth] = useState(today.getMonth())
@@ -127,15 +127,18 @@ export default function FinanceScreen({ store }: Props) {
                   const pe = getPending(c.price, data.enrollments.filter(e => e.classId === c.id))
                   const nIns = data.enrollments.filter(e => e.classId === c.id).length
                   return (
-                    <div key={c.id} className="card-row">
+                    <div key={c.id} className="card-row" onClick={() => onOpenClass(c.id)} style={{ cursor: 'pointer' }}>
                       <div>
                         <div style={{ fontSize: 14, fontWeight: 500, color: '#2a2a2a' }}>{c.name}</div>
                         <div style={{ fontSize: 12, color: '#8a7a6a' }}>{new Date(c.date + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} · {nIns} alumnas</div>
                       </div>
-                      <div style={{ textAlign: 'right' }}>
-                        {co > 0 && <div style={{ fontSize: 14, fontWeight: 500, color: '#2a6640' }}>{formatEur(co)} cobrado</div>}
-                        {pe > 0 && <div style={{ fontSize: 13, color: '#8a5a10', marginTop: 2 }}>{formatEur(pe)} pendiente</div>}
-                        {co === 0 && pe === 0 && <div style={{ fontSize: 13, color: '#aaa' }}>Sin ingresos</div>}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <div style={{ textAlign: 'right' }}>
+                          {co > 0 && <div style={{ fontSize: 14, fontWeight: 500, color: '#2a6640' }}>{formatEur(co)} cobrado</div>}
+                          {pe > 0 && <div style={{ fontSize: 13, color: '#8a5a10', marginTop: 2 }}>{formatEur(pe)} pendiente</div>}
+                          {co === 0 && pe === 0 && <div style={{ fontSize: 13, color: '#aaa' }}>Sin ingresos</div>}
+                        </div>
+                        <span style={{ fontSize: 12, color: '#c8c0b0', marginLeft: 8 }}>›</span>
                       </div>
                     </div>
                   )

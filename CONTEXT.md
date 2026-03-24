@@ -53,7 +53,7 @@ kriya/
 │   │   ├── ClassScreen.tsx   # Detalle de clase, lista alumnas, cambio estado; sala usa toggle switch; room selector en edición usa edición inline igual que HomeScreen
 │   │   ├── StudentsScreen.tsx# Directorio de alumnas
 │   │   ├── StudentDetail.tsx # Ficha alumna + historial + notas
-│   │   ├── FinanceScreen.tsx # Resumen financiero por mes; lista de meses con orden fijo; filas de sala son tapeables y abren sheet de edición
+│   │   ├── FinanceScreen.tsx # Resumen financiero por mes; lista de meses con orden fijo; filas de sala son tapeables y abren sheet de edición; filas de "Clases del mes" son tapeables y navegan a ClassScreen via onOpenClass prop
 │   │   └── Sheet.tsx         # Bottom sheet reutilizable
 │   ├── hooks/
 │   │   └── useStore.ts       # Estado global, todas las mutaciones de datos (async)
@@ -138,6 +138,8 @@ Jerarquía de botones:
 | `btn-destructive` | Acciones irreversibles (Eliminar) — reservado para uso futuro | Outline rojo tierra |
 
 Room selector pattern in class forms: when user clicks "+ Añadir sala", two input fields appear inline within the form — no second sheet is opened. On save, the new room is selected automatically and the inline form collapses. Shows only the inline form when no rooms exist yet.
+
+All save buttons implement saving state to prevent duplicate submissions: `disabled` + opacity 0.6 while saving, label changes to "Guardando..." or "Añadiendo...", and a guard at the top of each async handler returns early if already saving.
 
 FAB is only visible when the active tab is 'home'. Hidden on alumnas and finanzas tabs.
 

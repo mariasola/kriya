@@ -37,6 +37,9 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
   const [showInlineRoom, setShowInlineRoom] = useState(false)
   const [inlineRoomName, setInlineRoomName] = useState('')
   const [inlineRoomAddress, setInlineRoomAddress] = useState('')
+  const [savingEdit, setSavingEdit] = useState(false)
+  const [savingAdd, setSavingAdd] = useState(false)
+  const [savingRoom, setSavingRoom] = useState(false)
 
   if (loading || !cls) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, background: '#f5f0e8' }}>
@@ -48,23 +51,35 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
   const suggestions = data.students.filter(s => s.name.toLowerCase().includes(addInput.toLowerCase()) && !existingIds.includes(s.id))
 
   async function handleSaveEdit() {
-    await updateClass(classId, { name: editForm.name, date: editForm.date, time: editForm.time, capacity: parseInt(editForm.capacity) || 8, price: parseInt(editForm.price) || 20, roomCost: parseInt(editForm.roomCost) || 0, roomId: editForm.roomId })
-    setEditSheet(false)
+    if (savingEdit) return
+    setSavingEdit(true)
+    try {
+      await updateClass(classId, { name: editForm.name, date: editForm.date, time: editForm.time, capacity: parseInt(editForm.capacity) || 8, price: parseInt(editForm.price) || 20, roomCost: parseInt(editForm.roomCost) || 0, roomId: editForm.roomId })
+      setEditSheet(false)
+    } finally {
+      setSavingEdit(false)
+    }
   }
 
   async function handleAddStudent() {
     const val = addInput.trim()
     if (!val) return
-    let sid = selStudent
-    if (!sid) {
-      const ex = data.students.find(s => s.name.toLowerCase() === val.toLowerCase())
-      if (ex) sid = ex.id
-      else sid = await addStudent({ name: val, phone: '', notes: '' })
+    if (savingAdd) return
+    setSavingAdd(true)
+    try {
+      let sid = selStudent
+      if (!sid) {
+        const ex = data.students.find(s => s.name.toLowerCase() === val.toLowerCase())
+        if (ex) sid = ex.id
+        else sid = await addStudent({ name: val, phone: '', notes: '' })
+      }
+      await addEnrollment(classId, sid)
+      setAddSheet(false)
+      setAddInput('')
+      setSelStudent(null)
+    } finally {
+      setSavingAdd(false)
     }
-    await addEnrollment(classId, sid)
-    setAddSheet(false)
-    setAddInput('')
-    setSelStudent(null)
   }
 
   const curEnrollment = statusSheet ? data.enrollments.find(e => e.id === statusSheet) : null
@@ -158,21 +173,27 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
             <input className="field-input" placeholder="Nombre de la sala" value={inlineRoomName} onChange={e => setInlineRoomName(e.target.value)} style={{ marginBottom: 8 }} />
             <input className="field-input" placeholder="Dirección (opcional)" value={inlineRoomAddress} onChange={e => setInlineRoomAddress(e.target.value)} style={{ marginBottom: 8 }} />
             <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn-secondary" style={{ flex: 1, padding: '.65rem', fontSize: 13 }} onClick={async () => {
+              <button className="btn-secondary" disabled={savingRoom} onClick={async () => {
                 if (!inlineRoomName.trim()) return
-                const newRoom = await addRoom({ name: inlineRoomName.trim(), address: inlineRoomAddress.trim() })
-                setEditForm(f => ({ ...f, roomId: newRoom.id }))
-                setInlineRoomName('')
-                setInlineRoomAddress('')
-                setShowInlineRoom(false)
-              }}>Guardar sala</button>
+                if (savingRoom) return
+                setSavingRoom(true)
+                try {
+                  const newRoom = await addRoom({ name: inlineRoomName.trim(), address: inlineRoomAddress.trim() })
+                  setEditForm(f => ({ ...f, roomId: newRoom.id }))
+                  setInlineRoomName('')
+                  setInlineRoomAddress('')
+                  setShowInlineRoom(false)
+                } finally {
+                  setSavingRoom(false)
+                }
+              }} style={{ flex: 1, padding: '.65rem', fontSize: 13, opacity: savingRoom ? 0.6 : 1 }}>{savingRoom ? 'Guardando...' : 'Guardar sala'}</button>
               {data.rooms.length > 0 && (
                 <button className="btn-ghost" style={{ flex: 1, padding: '.65rem', fontSize: 13 }} onClick={() => { setShowInlineRoom(false); setInlineRoomName(''); setInlineRoomAddress('') }}>Cancelar</button>
               )}
             </div>
           </div>
         )}
-        <button className="btn-primary" onClick={handleSaveEdit}>Guardar</button>
+        <button className="btn-primary" onClick={handleSaveEdit} disabled={savingEdit} style={{ opacity: savingEdit ? 0.6 : 1 }}>{savingEdit ? 'Guardando...' : 'Guardar'}</button>
         <button className="btn-ghost" onClick={() => setEditSheet(false)}>Cancelar</button>
       </Sheet>
 
@@ -193,7 +214,7 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
           </div>
         )}
         <div style={{ height: 8 }} />
-        <button className="btn-primary" onClick={handleAddStudent}>Añadir</button>
+        <button className="btn-primary" onClick={handleAddStudent} disabled={savingAdd} style={{ opacity: savingAdd ? 0.6 : 1 }}>{savingAdd ? 'Añadiendo...' : 'Añadir'}</button>
         <button className="btn-ghost" onClick={() => { setAddSheet(false); setAddInput(''); setSelStudent(null) }}>Cancelar</button>
       </Sheet>
 

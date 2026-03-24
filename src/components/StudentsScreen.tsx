@@ -17,6 +17,7 @@ export default function StudentsScreen({ store, onOpenStudent }: Props) {
   const [showNew, setShowNew] = useState(false)
   const [form, setForm] = useState({ name: '', phone: '', notes: '' })
   const [phoneError, setPhoneError] = useState('')
+  const [saving, setSaving] = useState(false)
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, background: '#f5f0e8' }}>
@@ -26,10 +27,16 @@ export default function StudentsScreen({ store, onOpenStudent }: Props) {
 
   async function handleSave() {
     if (!form.name.trim()) return
-    await addStudent(form)
-    setShowNew(false)
-    setForm({ name: '', phone: '', notes: '' })
-    setPhoneError('')
+    if (saving) return
+    setSaving(true)
+    try {
+      await addStudent(form)
+      setShowNew(false)
+      setForm({ name: '', phone: '', notes: '' })
+      setPhoneError('')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -73,7 +80,7 @@ export default function StudentsScreen({ store, onOpenStudent }: Props) {
         {phoneError && <div style={{ fontSize: 12, color: '#9a3a1e', marginTop: -8, marginBottom: 8 }}>{phoneError}</div>}
         <label className="field-label">Notas (dolencias, nivel, alergias…)</label>
         <textarea className="field-input" rows={3} placeholder="Ej. Lesión en rodilla, principiante..." value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
-        <button className="btn-primary" onClick={handleSave}>Guardar</button>
+        <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ opacity: saving ? 0.6 : 1 }}>{saving ? 'Guardando...' : 'Guardar'}</button>
         <button className="btn-ghost" onClick={() => setShowNew(false)}>Cancelar</button>
       </Sheet>
     </>

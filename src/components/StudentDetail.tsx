@@ -26,6 +26,7 @@ export default function StudentDetail({ store, studentId, onBack }: Props) {
   const [editSheet, setEditSheet] = useState(false)
   const [form, setForm] = useState({ name: student?.name || '', phone: student?.phone || '', notes: student?.notes || '' })
   const [phoneError, setPhoneError] = useState('')
+  const [saving, setSaving] = useState(false)
 
   if (loading || !student) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, background: '#f5f0e8' }}>
@@ -35,9 +36,15 @@ export default function StudentDetail({ store, studentId, onBack }: Props) {
 
   async function handleSave() {
     if (!form.name.trim()) return
-    await updateStudent(studentId, form)
-    setEditSheet(false)
-    setPhoneError('')
+    if (saving) return
+    setSaving(true)
+    try {
+      await updateStudent(studentId, form)
+      setEditSheet(false)
+      setPhoneError('')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -95,7 +102,7 @@ export default function StudentDetail({ store, studentId, onBack }: Props) {
         {phoneError && <div style={{ fontSize: 12, color: '#9a3a1e', marginTop: -8, marginBottom: 8 }}>{phoneError}</div>}
         <label className="field-label">Notas (dolencias, nivel, alergias…)</label>
         <textarea className="field-input" rows={3} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
-        <button className="btn-primary" onClick={handleSave}>Guardar</button>
+        <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ opacity: saving ? 0.6 : 1 }}>{saving ? 'Guardando...' : 'Guardar'}</button>
         <button className="btn-ghost" onClick={() => setEditSheet(false)}>Cancelar</button>
       </Sheet>
     </>

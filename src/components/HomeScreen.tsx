@@ -20,6 +20,8 @@ export default function HomeScreen({ store, onOpenClass, isActiveTab }: Props) {
   const [showInlineRoom, setShowInlineRoom] = useState(false)
   const [inlineRoomName, setInlineRoomName] = useState('')
   const [inlineRoomAddress, setInlineRoomAddress] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [savingRoom, setSavingRoom] = useState(false)
 
   useEffect(() => {
     if (!form.roomId && data.rooms.length > 0) {
@@ -51,9 +53,15 @@ export default function HomeScreen({ store, onOpenClass, isActiveTab }: Props) {
 
   async function handleSave() {
     if (!form.name || !form.date || !form.roomId) return
-    await addClass({ name: form.name, date: form.date, time: form.time, roomId: form.roomId, capacity: parseInt(form.capacity) || 8, price: parseInt(form.price) || 20, roomCost: parseInt(form.roomCost) || 0, roomPaid: false })
-    setShowNew(false)
-    setForm({ name: '', date: toISO(today), time: '10:00', capacity: '8', price: '20', roomCost: '', roomId: data.rooms[0]?.id || '' })
+    if (saving) return
+    setSaving(true)
+    try {
+      await addClass({ name: form.name, date: form.date, time: form.time, roomId: form.roomId, capacity: parseInt(form.capacity) || 8, price: parseInt(form.price) || 20, roomCost: parseInt(form.roomCost) || 0, roomPaid: false })
+      setShowNew(false)
+      setForm({ name: '', date: toISO(today), time: '10:00', capacity: '8', price: '20', roomCost: '', roomId: data.rooms[0]?.id || '' })
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -146,21 +154,27 @@ export default function HomeScreen({ store, onOpenClass, isActiveTab }: Props) {
             <input className="field-input" placeholder="Nombre de la sala" value={inlineRoomName} onChange={e => setInlineRoomName(e.target.value)} style={{ marginBottom: 8 }} />
             <input className="field-input" placeholder="Dirección (opcional)" value={inlineRoomAddress} onChange={e => setInlineRoomAddress(e.target.value)} style={{ marginBottom: 8 }} />
             <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn-secondary" style={{ flex: 1, padding: '.65rem', fontSize: 13 }} onClick={async () => {
+              <button className="btn-secondary" style={{ flex: 1, padding: '.65rem', fontSize: 13 }} disabled={savingRoom} onClick={async () => {
                 if (!inlineRoomName.trim()) return
-                const newRoom = await addRoom({ name: inlineRoomName.trim(), address: inlineRoomAddress.trim() })
-                setForm(f => ({ ...f, roomId: newRoom.id }))
-                setInlineRoomName('')
-                setInlineRoomAddress('')
-                setShowInlineRoom(false)
-              }}>Guardar sala</button>
+                if (savingRoom) return
+                setSavingRoom(true)
+                try {
+                  const newRoom = await addRoom({ name: inlineRoomName.trim(), address: inlineRoomAddress.trim() })
+                  setForm(f => ({ ...f, roomId: newRoom.id }))
+                  setInlineRoomName('')
+                  setInlineRoomAddress('')
+                  setShowInlineRoom(false)
+                } finally {
+                  setSavingRoom(false)
+                }
+              }} style={{ flex: 1, padding: '.65rem', fontSize: 13, opacity: savingRoom ? 0.6 : 1 }}>{savingRoom ? 'Guardando...' : 'Guardar sala'}</button>
               {data.rooms.length > 0 && (
                 <button className="btn-ghost" style={{ flex: 1, padding: '.65rem', fontSize: 13 }} onClick={() => { setShowInlineRoom(false); setInlineRoomName(''); setInlineRoomAddress('') }}>Cancelar</button>
               )}
             </div>
           </div>
         )}
-        <button className="btn-primary" onClick={handleSave}>Guardar clase</button>
+        <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ opacity: saving ? 0.6 : 1 }}>{saving ? 'Guardando...' : 'Guardar clase'}</button>
         <button className="btn-ghost" onClick={() => setShowNew(false)}>Cancelar</button>
       </Sheet>
     </>

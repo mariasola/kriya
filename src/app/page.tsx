@@ -63,7 +63,7 @@ export default function App() {
       {screen === 'class' && currentClassId && <ClassScreen store={store} classId={currentClassId} onBack={goBack} />}
       {screen === 'students' && <StudentsScreen store={store} onOpenStudent={openStudent} />}
       {screen === 'student-detail' && currentStudentId && <StudentDetail store={store} studentId={currentStudentId} onBack={goBack} />}
-      {screen === 'finance' && <FinanceScreen store={store} />}
+      {screen === 'finance' && <FinanceScreen store={store} onOpenClass={openClass} />}
       <BottomNav activeTab={tab} onNavigate={navigate} onSignOut={() => supabase.auth.signOut()} />
     </div>
   )

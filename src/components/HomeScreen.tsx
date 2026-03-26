@@ -154,7 +154,7 @@ export default function HomeScreen({ store, onOpenClass, isActiveTab }: Props) {
             <input className="field-input" placeholder="Nombre de la sala" value={inlineRoomName} onChange={e => setInlineRoomName(e.target.value)} style={{ marginBottom: 8 }} />
             <input className="field-input" placeholder="Dirección (opcional)" value={inlineRoomAddress} onChange={e => setInlineRoomAddress(e.target.value)} style={{ marginBottom: 8 }} />
             <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn-secondary" style={{ flex: 1, padding: '.65rem', fontSize: 13 }} disabled={savingRoom} onClick={async () => {
+              <button className="btn-secondary" style={{ flex: 1, padding: '.65rem', fontSize: 13, opacity: savingRoom ? 0.6 : 1 }} disabled={savingRoom} onClick={async () => {
                 if (!inlineRoomName.trim()) return
                 if (savingRoom) return
                 setSavingRoom(true)
@@ -167,7 +167,7 @@ export default function HomeScreen({ store, onOpenClass, isActiveTab }: Props) {
                 } finally {
                   setSavingRoom(false)
                 }
-              }} style={{ flex: 1, padding: '.65rem', fontSize: 13, opacity: savingRoom ? 0.6 : 1 }}>{savingRoom ? 'Guardando...' : 'Guardar sala'}</button>
+              }}>{savingRoom ? 'Guardando...' : 'Guardar sala'}</button>
               {data.rooms.length > 0 && (
                 <button className="btn-ghost" style={{ flex: 1, padding: '.65rem', fontSize: 13 }} onClick={() => { setShowInlineRoom(false); setInlineRoomName(''); setInlineRoomAddress('') }}>Cancelar</button>
               )}

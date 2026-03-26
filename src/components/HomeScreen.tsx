@@ -24,9 +24,7 @@ export default function HomeScreen({ store, onOpenClass, isActiveTab }: Props) {
   const [savingRoom, setSavingRoom] = useState(false)
 
   useEffect(() => {
-    if (!form.roomId && data.rooms.length > 0) {
-      setForm(f => ({ ...f, roomId: data.rooms[0].id }))
-    }
+    setForm(f => (!f.roomId && data.rooms.length > 0 ? { ...f, roomId: data.rooms[0].id } : f))
   }, [data.rooms])
 
   if (loading) return (

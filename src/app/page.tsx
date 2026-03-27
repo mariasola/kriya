@@ -15,26 +15,13 @@ import type { Session } from '@supabase/supabase-js'
 export type Tab = 'home' | 'students' | 'finance'
 export type Screen = Tab | 'class' | 'student-detail'
 
-export default function App() {
-  const [session, setSession] = useState<Session | null>(null)
-  const [authLoading, setAuthLoading] = useState(true)
+function AuthenticatedApp() {
   const store = useStore()
   const [tab, setTab] = useState<Tab>('home')
   const [screen, setScreen] = useState<Screen>('home')
   const [screenStack, setScreenStack] = useState<Screen[]>([])
   const [currentClassId, setCurrentClassId] = useState<string | null>(null)
   const [currentStudentId, setCurrentStudentId] = useState<string | null>(null)
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setAuthLoading(false)
-    })
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session)
-    })
-    return () => subscription.unsubscribe()
-  }, [])
 
   function navigate(t: Tab) {
     setTab(t); setScreen(t); setScreenStack([])
@@ -49,14 +36,6 @@ export default function App() {
   function openClass(id: string) { setCurrentClassId(id); pushScreen('class') }
   function openStudent(id: string) { setCurrentStudentId(id); pushScreen('student-detail') }
 
-  if (authLoading) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100dvh', background: '#f5f0e8' }}>
-      <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 24, color: '#3d4a2e' }}>Kriyā</p>
-    </div>
-  )
-
-  if (!session) return <AuthScreen />
-
   return (
     <div className="app-shell">
       {screen === 'home' && <HomeScreen store={store} onOpenClass={openClass} isActiveTab={tab === 'home'} />}
@@ -67,4 +46,31 @@ export default function App() {
       <BottomNav activeTab={tab} onNavigate={navigate} onSignOut={() => supabase.auth.signOut()} />
     </div>
   )
+}
+
+export default function App() {
+  const [session, setSession] = useState<Session | null>(null)
+  const [authLoading, setAuthLoading] = useState(true)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+      setAuthLoading(false)
+    })
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+      setAuthLoading(false)
+    })
+    return () => subscription.unsubscribe()
+  }, [])
+
+  if (authLoading) return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100dvh', background: '#f5f0e8' }}>
+      <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 24, color: '#3d4a2e' }}>Kriyā</p>
+    </div>
+  )
+
+  if (!session) return <AuthScreen />
+
+  return <AuthenticatedApp />
 }

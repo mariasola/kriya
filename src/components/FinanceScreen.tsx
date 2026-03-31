@@ -32,7 +32,7 @@ export default function FinanceScreen({ store, onOpenClass }: Props) {
   })
 
   const ingresos = classesMes.reduce((s, c) => s + getRevenue(c.price, data.enrollments.filter(e => e.classId === c.id)), 0)
-  const gastos = classesMes.reduce((s, c) => s + c.roomCost, 0)
+  const gastos = classesMes.reduce((s, c) => s + (data.rooms.some(r => r.id === c.roomId) ? c.roomCost : 0), 0)
   const balance = ingresos - gastos
   const pendiente = classesMes.reduce((s, c) => s + getPending(c.price, data.enrollments.filter(e => e.classId === c.id)), 0)
 
@@ -51,6 +51,8 @@ export default function FinanceScreen({ store, onOpenClass }: Props) {
 
   const roomsUsed: Record<string, { total: number; n: number }> = {}
   classesMes.forEach(c => {
+    if (!c.roomId) return
+    if (!data.rooms.some(r => r.id === c.roomId)) return
     if (!roomsUsed[c.roomId]) roomsUsed[c.roomId] = { total: 0, n: 0 }
     roomsUsed[c.roomId].total += c.roomCost
     roomsUsed[c.roomId].n++
@@ -107,7 +109,7 @@ export default function FinanceScreen({ store, onOpenClass }: Props) {
                       setRoomEditForm({ name: r?.name || '', address: r?.address || '' })
                     }}>
                       <div>
-                        <div style={{ fontSize: 14, fontWeight: 500, color: '#2a2a2a' }}>{r?.name || 'Sala'}</div>
+                        <div style={{ fontSize: 14, fontWeight: 500, color: '#2a2a2a' }}>{r?.name}</div>
                         <div style={{ fontSize: 12, color: '#8a7a6a' }}>{v.n} clase{v.n !== 1 ? 's' : ''}</div>
                       </div>
                       <div style={{ fontSize: 15, fontWeight: 500, color: '#9a3a1e' }}>{formatEur(v.total)}</div>

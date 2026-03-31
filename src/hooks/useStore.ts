@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { AppData, Student, Class, Room, EnrollmentStatus } from '@/lib/types'
 import {
   loadData, createRoom, updateRoom, createStudent, updateStudent,
-  createClass, updateClass, createEnrollment, updateEnrollment,
+  createClass, updateClass, deleteClass, createEnrollment, updateEnrollment,
 } from '@/lib/data'
 import { computeEnrollmentChanges } from '@/lib/calculations'
 
@@ -21,6 +21,7 @@ export interface ClassScreenStore {
   data: AppData
   loading: boolean
   updateClass: (id: string, changes: Partial<Class>) => Promise<void>
+  deleteClass: (id: string) => Promise<void>
   addEnrollment: (classId: string, studentId: string) => Promise<void>
   setEnrollmentStatus: (enrollmentId: string, status: EnrollmentStatus) => Promise<void>
   addStudent: (student: Omit<Student, 'id'>) => Promise<string>
@@ -104,6 +105,16 @@ export function useStore() {
     }
   }
 
+  const deleteClassItem = async (id: string) => {
+    try {
+      await deleteClass(id)
+      await reload()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al eliminar clase')
+      throw e
+    }
+  }
+
   const addStudent = async (student: Omit<Student, 'id'>): Promise<string> => {
     try {
       const s = await createStudent(student)
@@ -154,7 +165,7 @@ export function useStore() {
   return {
     data, loading, error,
     addRoom, updateRoom: updateRoomItem,
-    addClass, updateClass: updateClassItem,
+    addClass, updateClass: updateClassItem, deleteClass: deleteClassItem,
     addStudent, updateStudent: updateStudentItem,
     addEnrollment, setEnrollmentStatus,
   }

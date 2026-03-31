@@ -21,7 +21,7 @@ function statusBadge(s: EnrollmentStatus, deposit: number) {
 }
 
 export default function ClassScreen({ store, classId, onBack }: Props) {
-  const { data, loading, updateClass, addEnrollment, setEnrollmentStatus, addStudent, addRoom } = store
+  const { data, loading, updateClass, deleteClass, addEnrollment, setEnrollmentStatus, addStudent, addRoom } = store
   const cls = data.classes.find(c => c.id === classId)!
   const room = data.rooms.find(r => r.id === cls?.roomId)
   const ins = data.enrollments.filter(e => e.classId === classId)
@@ -54,7 +54,7 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
     if (savingEdit) return
     setSavingEdit(true)
     try {
-      await updateClass(classId, { name: editForm.name, date: editForm.date, time: editForm.time, capacity: parseInt(editForm.capacity) || 8, price: parseInt(editForm.price) || 20, roomCost: parseInt(editForm.roomCost) || 0, roomId: editForm.roomId })
+      await updateClass(classId, { name: editForm.name, date: editForm.date, time: editForm.time, capacity: parseInt(editForm.capacity) || 8, price: parseInt(editForm.price) || 20, roomCost: parseInt(editForm.roomCost) || 0, roomId: editForm.roomId || null })
       setEditSheet(false)
     } finally {
       setSavingEdit(false)
@@ -93,7 +93,7 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
           <div style={{ position: 'relative' }}>
             <div className="hdr-lbl">{new Date(cls.date + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })} · {cls.time}</div>
             <div className="hdr-title">{cls.name}{room && <small>{room.name} · {room.address}</small>}</div>
-            <button className="edit-btn" onClick={() => { setEditForm({ name: cls.name, date: cls.date, time: cls.time, capacity: String(cls.capacity), price: String(cls.price), roomCost: String(cls.roomCost), roomId: cls.roomId }); setShowInlineRoom(false); setEditSheet(true) }}>
+            <button className="edit-btn" onClick={() => { setEditForm({ name: cls.name, date: cls.date, time: cls.time, capacity: String(cls.capacity), price: String(cls.price), roomCost: String(cls.roomCost), roomId: cls.roomId || '' }); setShowInlineRoom(false); setEditSheet(true) }}>
               <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </button>
           </div>
@@ -160,6 +160,7 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
         {data.rooms.length > 0 && !showInlineRoom && (
           <>
             <select className="field-input" value={editForm.roomId} onChange={e => setEditForm(f => ({ ...f, roomId: e.target.value }))}>
+              <option value="">Sin sala</option>
               {data.rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
             </select>
             <span onClick={() => setShowInlineRoom(true)} style={{ display: 'inline-block', marginTop: 6, marginBottom: 4, fontSize: 13, color: '#3d4a2e', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
@@ -195,6 +196,14 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
         )}
         <button className="btn-primary" onClick={handleSaveEdit} disabled={savingEdit} style={{ opacity: savingEdit ? 0.6 : 1 }}>{savingEdit ? 'Guardando...' : 'Guardar'}</button>
         <button className="btn-ghost" onClick={() => setEditSheet(false)}>Cancelar</button>
+        <div style={{ marginTop: 16, borderTop: '.5px solid #e8e0d0', paddingTop: 16 }}>
+          <button className="btn-destructive" onClick={async () => {
+            if (!window.confirm('¿Eliminar esta clase? Esta acción no se puede deshacer.')) return
+            await deleteClass(classId)
+            setEditSheet(false)
+            onBack()
+          }}>Eliminar clase</button>
+        </div>
       </Sheet>
 
       <Sheet open={addSheet} onClose={() => { setAddSheet(false); setAddInput(''); setSelStudent(null) }} title="Añadir alumna">

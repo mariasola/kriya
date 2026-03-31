@@ -11,7 +11,7 @@ export interface Class {
   name: string
   date: string       // ISO date string YYYY-MM-DD
   time: string       // HH:MM
-  roomId: string
+  roomId: string | null
   capacity: number
   price: number
   roomCost: number

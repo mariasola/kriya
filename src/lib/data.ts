@@ -126,6 +126,11 @@ export async function updateClass(id: string, changes: Partial<Class>): Promise<
   return mapClass(row)
 }
 
+export async function deleteClass(id: string): Promise<void> {
+  const { error } = await supabase.from('classes').delete().eq('id', id)
+  if (error) throw new Error(error.message)
+}
+
 // ── Enrollments ────────────────────────────────────────────────────────────
 
 export async function createEnrollment(classId: string, studentId: string): Promise<Enrollment> {

@@ -1,9 +1,11 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { HomeScreenStore } from '@/hooks/useStore'
-import { getRevenue, getPending, formatEur } from '@/lib/data'
+import { getRevenue, getPending, formatEur } from '@/lib/calculations'
 import { Class } from '@/lib/types'
 import Sheet from './Sheet'
+import LoadingScreen from './ui/LoadingScreen'
+import InlineRoomForm from './ui/InlineRoomForm'
 
 interface Props { store: HomeScreenStore; onOpenClass: (id: string) => void; isActiveTab: boolean }
 
@@ -18,20 +20,13 @@ export default function HomeScreen({ store, onOpenClass, isActiveTab }: Props) {
   const [showNew, setShowNew] = useState(false)
   const [form, setForm] = useState({ name: '', date: toISO(today), time: '10:00', capacity: '8', price: '20', roomCost: '', roomId: '' })
   const [showInlineRoom, setShowInlineRoom] = useState(false)
-  const [inlineRoomName, setInlineRoomName] = useState('')
-  const [inlineRoomAddress, setInlineRoomAddress] = useState('')
   const [saving, setSaving] = useState(false)
-  const [savingRoom, setSavingRoom] = useState(false)
 
   useEffect(() => {
     setForm(f => (!f.roomId && data.rooms.length > 0 ? { ...f, roomId: data.rooms[0].id } : f))
   }, [data.rooms])
 
-  if (loading) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, background: '#f5f0e8' }}>
-      <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, color: '#8a7a6a', fontStyle: 'italic' }}>Cargando...</p>
-    </div>
-  )
+  if (loading) return <LoadingScreen />
 
   const ws = new Date(today); ws.setDate(today.getDate() - today.getDay() + 1)
   const we = new Date(ws); we.setDate(ws.getDate() + 6)
@@ -148,30 +143,12 @@ export default function HomeScreen({ store, onOpenClass, isActiveTab }: Props) {
           </>
         )}
         {(data.rooms.length === 0 || showInlineRoom) && (
-          <div style={{ background: '#f5f0e8', borderRadius: 10, padding: '12px', border: '.5px solid #d8d0c0', marginBottom: 8 }}>
-            <div style={{ fontSize: 12, color: '#8a7a6a', marginBottom: 8 }}>Nueva sala</div>
-            <input className="field-input" placeholder="Nombre de la sala" value={inlineRoomName} onChange={e => setInlineRoomName(e.target.value)} style={{ marginBottom: 8 }} />
-            <input className="field-input" placeholder="Dirección (opcional)" value={inlineRoomAddress} onChange={e => setInlineRoomAddress(e.target.value)} style={{ marginBottom: 8 }} />
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn-secondary" style={{ flex: 1, padding: '.65rem', fontSize: 13, opacity: savingRoom ? 0.6 : 1 }} disabled={savingRoom} onClick={async () => {
-                if (!inlineRoomName.trim()) return
-                if (savingRoom) return
-                setSavingRoom(true)
-                try {
-                  const newRoom = await addRoom({ name: inlineRoomName.trim(), address: inlineRoomAddress.trim() })
-                  setForm(f => ({ ...f, roomId: newRoom.id }))
-                  setInlineRoomName('')
-                  setInlineRoomAddress('')
-                  setShowInlineRoom(false)
-                } finally {
-                  setSavingRoom(false)
-                }
-              }}>{savingRoom ? 'Guardando...' : 'Guardar sala'}</button>
-              {data.rooms.length > 0 && (
-                <button className="btn-ghost" style={{ flex: 1, padding: '.65rem', fontSize: 13 }} onClick={() => { setShowInlineRoom(false); setInlineRoomName(''); setInlineRoomAddress('') }}>Cancelar</button>
-              )}
-            </div>
-          </div>
+          <InlineRoomForm
+            hasExistingRooms={data.rooms.length > 0}
+            addRoom={addRoom}
+            onSaved={room => { setForm(f => ({ ...f, roomId: room.id })); setShowInlineRoom(false) }}
+            onCancel={() => setShowInlineRoom(false)}
+          />
         )}
         <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ opacity: saving ? 0.6 : 1 }}>{saving ? 'Guardando...' : 'Guardar clase'}</button>
         <button className="btn-ghost" onClick={() => setShowNew(false)}>Cancelar</button>

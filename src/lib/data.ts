@@ -1,7 +1,6 @@
 import { supabase } from './supabase'
 import { AppData, Room, Class, Student, Enrollment } from './types'
 
-export { getRevenue, getPending, getInitials, formatEur } from './calculations'
 
 // ── Mappers (snake_case DB → camelCase frontend) ───────────────────────────
 

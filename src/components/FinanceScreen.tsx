@@ -1,8 +1,9 @@
 'use client'
 import { useState } from 'react'
 import { FinanceScreenStore } from '@/hooks/useStore'
-import { getRevenue, getPending, formatEur } from '@/lib/data'
+import { getRevenue, getPending, formatEur } from '@/lib/calculations'
 import Sheet from './Sheet'
+import LoadingScreen from './ui/LoadingScreen'
 
 interface Props { store: FinanceScreenStore; onOpenClass: (id: string) => void }
 
@@ -11,17 +12,13 @@ const MONTHS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', '
 export default function FinanceScreen({ store, onOpenClass }: Props) {
   const { data, loading, updateRoom } = store
   const today = new Date()
-  const [selMonth, setSelMonth] = useState(today.getMonth())
-  const selYear = today.getFullYear()
+  const [sel, setSel] = useState({ month: today.getMonth(), year: today.getFullYear() })
+  const { month: selMonth, year: selYear } = sel
   const [pendSheet, setPendSheet] = useState(false)
   const [editRoomId, setEditRoomId] = useState<string | null>(null)
   const [roomEditForm, setRoomEditForm] = useState({ name: '', address: '' })
 
-  if (loading) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, background: '#f5f0e8' }}>
-      <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, color: '#8a7a6a', fontStyle: 'italic' }}>Cargando...</p>
-    </div>
-  )
+  if (loading) return <LoadingScreen />
 
   const currentMonth = today.getMonth()
   const monthOrder = Array.from({ length: 12 }, (_, i) => (currentMonth + i) % 12)
@@ -69,7 +66,7 @@ export default function FinanceScreen({ store, onOpenClass }: Props) {
               const yr = m < currentMonth ? selYear + 1 : selYear
               const showYr = yr !== selYear ? ` '${String(yr).slice(2)}` : ''
               return (
-                <button key={m} className={`mpill ${m === selMonth ? 'active' : ''}`} onClick={() => setSelMonth(m)}>
+                <button key={m} className={`mpill ${m === selMonth && yr === selYear ? 'active' : ''}`} onClick={() => setSel({ month: m, year: yr })}>
                   {MONTHS[m]}{showYr}
                 </button>
               )

@@ -5,24 +5,24 @@ export { getRevenue, getPending, getInitials, formatEur } from './calculations'
 
 // ── Mappers (snake_case DB → camelCase frontend) ───────────────────────────
 
-function mapRoom(r: any): Room {
+export function mapRoom(r: any): Room {
   return { id: r.id, name: r.name, address: r.address || '' }
 }
 
-function mapStudent(s: any): Student {
+export function mapStudent(s: any): Student {
   return { id: s.id, name: s.name, phone: s.phone || '', notes: s.notes || '' }
 }
 
-function mapClass(c: any): Class {
+export function mapClass(c: any): Class {
   return {
     id: c.id, name: c.name, date: c.date, time: c.time,
-    roomId: c.room_id || '', capacity: c.capacity,
+    roomId: c.room_id || null, capacity: c.capacity,
     price: c.price ?? 20,
     roomCost: c.room_cost, roomPaid: c.room_paid
   }
 }
 
-function mapEnrollment(e: any): Enrollment {
+export function mapEnrollment(e: any): Enrollment {
   return {
     id: e.id, classId: e.class_id, studentId: e.student_id,
     status: e.status, deposit: e.deposit, total: e.total

@@ -38,6 +38,12 @@ function AuthenticatedApp() {
 
   return (
     <div className="app-shell">
+      {store.error && (
+        <div style={{ position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 430, background: '#9a3a1e', color: '#fff', fontSize: 13, padding: '10px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 100, boxSizing: 'border-box' }}>
+          <span>{store.error}</span>
+          <button onClick={store.dismissError} style={{ background: 'none', border: 'none', color: '#fff', fontSize: 18, cursor: 'pointer', lineHeight: 1, padding: '0 0 0 12px' }}>×</button>
+        </div>
+      )}
       {screen === 'home' && <HomeScreen store={store} onOpenClass={openClass} isActiveTab={tab === 'home'} />}
       {screen === 'class' && currentClassId && <ClassScreen store={store} classId={currentClassId} onBack={goBack} />}
       {screen === 'students' && <StudentsScreen store={store} onOpenStudent={openStudent} />}

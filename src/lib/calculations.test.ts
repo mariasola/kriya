@@ -140,6 +140,14 @@ describe('getInitials', () => {
   it('only uses first two words for longer names', () => {
     expect(getInitials('María García López')).toBe('MG')
   })
+
+  it('returns empty string for empty name', () => {
+    expect(getInitials('')).toBe('')
+  })
+
+  it('uppercases lowercase names', () => {
+    expect(getInitials('ana pérez')).toBe('AP')
+  })
 })
 
 // ── formatEur ─────────────────────────────────────────────────────────────
@@ -155,5 +163,50 @@ describe('formatEur', () => {
 
   it('formats negative number (balance negativo)', () => {
     expect(formatEur(-5)).toBe('-5€')
+  })
+
+  it('formats decimal number without rounding', () => {
+    expect(formatEur(20.5)).toBe('20.5€')
+  })
+})
+
+// ── getPending edge cases ──────────────────────────────────────────────────
+
+describe('getPending edge cases', () => {
+  it('deposit_paid where deposit equals price: pending is 0', () => {
+    const e = enrollment({ status: 'deposit_paid', deposit: 20 })
+    expect(getPending(20, [e])).toBe(0)
+  })
+})
+
+// ── getRevenue edge cases ──────────────────────────────────────────────────
+
+describe('getRevenue edge cases', () => {
+  it('class with price 0 does not break', () => {
+    const e = enrollment({ status: 'paid' })
+    expect(getRevenue(0, [e])).toBe(0)
+  })
+
+  it('all no_show enrollments return 0', () => {
+    const ns1 = enrollment({ id: 'e1', status: 'no_show' })
+    const ns2 = enrollment({ id: 'e2', status: 'no_show' })
+    expect(getRevenue(20, [ns1, ns2])).toBe(0)
+  })
+})
+
+// ── computeEnrollmentChanges edge cases ───────────────────────────────────
+
+describe('computeEnrollmentChanges edge cases', () => {
+  it('paid -> paid: overwrites total with current classPrice', () => {
+    const e = enrollment({ status: 'paid', total: 20 })
+    const changes = computeEnrollmentChanges(e, 'paid', 25)
+    expect(changes.total).toBe(25)
+  })
+
+  it('no_show does not set deposit', () => {
+    const e = enrollment({ status: 'registered', deposit: 0 })
+    const changes = computeEnrollmentChanges(e, 'no_show', 20)
+    expect(changes.deposit).toBeUndefined()
+    expect(changes.total).toBe(0)
   })
 })

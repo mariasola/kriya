@@ -162,8 +162,10 @@ export function useStore() {
     }
   }
 
+  const dismissError = () => setError(null)
+
   return {
-    data, loading, error,
+    data, loading, error, dismissError,
     addRoom, updateRoom: updateRoomItem,
     addClass, updateClass: updateClassItem, deleteClass: deleteClassItem,
     addStudent, updateStudent: updateStudentItem,

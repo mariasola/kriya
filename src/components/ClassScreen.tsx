@@ -31,6 +31,7 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
   const [editSheet, setEditSheet] = useState(false)
   const [addSheet, setAddSheet] = useState(false)
   const [statusSheet, setStatusSheet] = useState<string | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const [addInput, setAddInput] = useState('')
   const [selStudent, setSelStudent] = useState<string | null>(null)
   const [editForm, setEditForm] = useState({ name: cls?.name || '', date: cls?.date || '', time: cls?.time || '', capacity: String(cls?.capacity || 8), price: String(cls?.price || 20), roomCost: String(cls?.roomCost || 0), roomId: cls?.roomId || '' })
@@ -207,13 +208,18 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
         <button className="btn-primary" onClick={handleSaveEdit} disabled={savingEdit} style={{ opacity: savingEdit ? 0.6 : 1 }}>{savingEdit ? 'Guardando...' : 'Guardar'}</button>
         <button className="btn-ghost" onClick={() => setEditSheet(false)}>Cancelar</button>
         <div style={{ marginTop: 16, borderTop: '.5px solid #e8e0d0', paddingTop: 16 }}>
-          <button className="btn-destructive" onClick={async () => {
-            if (!window.confirm('¿Eliminar esta clase? Esta acción no se puede deshacer.')) return
-            await deleteClass(classId)
-            setEditSheet(false)
-            onBack()
-          }}>Eliminar clase</button>
+          <button className="btn-destructive" onClick={() => { setEditSheet(false); setConfirmDelete(true) }}>Eliminar clase</button>
         </div>
+      </Sheet>
+
+      <Sheet open={confirmDelete} onClose={() => setConfirmDelete(false)} title="Eliminar clase">
+        <p style={{ fontSize: 14, color: '#5a4a3a', marginBottom: 16, lineHeight: 1.5 }}>¿Eliminar <strong>{cls.name}</strong>? Esta acción no se puede deshacer.</p>
+        <button className="btn-destructive" onClick={async () => {
+          await deleteClass(classId)
+          setConfirmDelete(false)
+          onBack()
+        }}>Sí, eliminar</button>
+        <button className="btn-ghost" onClick={() => setConfirmDelete(false)}>Cancelar</button>
       </Sheet>
 
       <Sheet open={addSheet} onClose={() => { setAddSheet(false); setAddInput(''); setSelStudent(null) }} title="Añadir alumna">

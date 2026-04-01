@@ -21,7 +21,7 @@ export default function StudentsScreen({ store, onOpenStudent }: Props) {
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, background: '#f5f0e8' }}>
-      <p style={{ color: '#8a7a6a', fontSize: 14 }}>Cargando...</p>
+      <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, color: '#8a7a6a', fontStyle: 'italic' }}>Cargando...</p>
     </div>
   )
 

@@ -29,7 +29,7 @@ export default function HomeScreen({ store, onOpenClass, isActiveTab }: Props) {
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, background: '#f5f0e8' }}>
-      <p style={{ color: '#8a7a6a', fontSize: 14 }}>Cargando...</p>
+      <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, color: '#8a7a6a', fontStyle: 'italic' }}>Cargando...</p>
     </div>
   )
 
@@ -76,6 +76,7 @@ export default function HomeScreen({ store, onOpenClass, isActiveTab }: Props) {
         </div>
         <div className="scroll">
           {keys.length === 0 && <div className="empty">No hay clases próximas.<br />Pulsa + para añadir una.</div>}
+          {keys.length > 0 && <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-muted)', marginBottom: 10 }}>Próximas clases</div>}
           {keys.map(k => (
             <div key={k} style={{ marginBottom: '1rem' }}>
               <div className="dlbl">{k}</div>

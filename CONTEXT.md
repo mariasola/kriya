@@ -124,6 +124,17 @@ Paleta definida como variables CSS en `globals.css`:
 | `--green-light` | #c8d9a0 | Métricas positivas, mes activo |
 | `--border` | #e8e0d0 | Bordes de cards |
 
+**Patrones importantes:**
+
+| Patrón | Regla |
+|---|---|
+| **Header verde (`--olive`)** | Pantallas principales con tab propio: HomeScreen, StudentsScreen, FinanceScreen. Todas incluyen una grid `.metrics` con 3 cards. |
+| **Header crema (`--cream`)** | Subpantallas sin tab propio: ClassScreen, StudentDetail. Clase CSS: `hdr hdr-sub`. Incluye borde inferior `1px solid var(--border)`. |
+| **Métricas en pantallas principales** | `.metrics` dentro de `.hdr`. StudentsScreen: "alumnas" (real) + "suscritas" + "puntuales" (placeholders con `opacity: 0.35` hasta que existan suscripciones). |
+| **Métricas en subpantallas** | Salen del header y se renderizan en el área de scroll como cards blancas con `border: 1px solid var(--border); border-radius: 10px` |
+| **Botón Volver en subpantallas** | `color: var(--olive); font-weight: 500` (gestionado por `.hdr-sub .back-btn`) |
+| **Edit button en subpantallas** | `background: var(--cream-dark); border: 1px solid var(--border); color: var(--olive)` |
+
 Tipografías:
 - **Cormorant Garamond** — títulos de pantalla (serif, elegante)
 - **DM Sans** — todo lo demás (sans-serif, legible)

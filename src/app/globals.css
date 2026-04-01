@@ -2,6 +2,7 @@
 
 :root {
   --olive: #52582e;
+  --olive-dark: #2e3520;
   --olive-light: #6b7f4a;
   --cream: #f5f0e8;
   --cream-dark: #f0ebe0;
@@ -41,7 +42,7 @@ html, body {
 .hdr {
   background: var(--olive);
   border-radius: 0 0 24px 24px;
-  padding: 1.25rem 1.25rem 1.5rem;
+  padding: calc(1.25rem + env(safe-area-inset-top)) 1.25rem 1.5rem;
   flex-shrink: 0;
 }
 .hdr-lbl { font-size: 11px; color: #a8b89a; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 4px; }
@@ -55,6 +56,20 @@ html, body {
 .metric-val.green { color: var(--green-light); }
 .metric-val.amber { color: #e8c08a; }
 .metric-lbl { font-size: 10px; color: #a8b89a; margin-top: 3px; }
+
+/* ── Sub-screen header modifier ──
+   Rule: --olive (verde) = pantalla principal con tab propio.
+         --cream (crema) = subpantalla sin tab propio (ClassScreen, StudentDetail).
+   Usage: add class "hdr-sub" alongside "hdr" on sub-screens. */
+.hdr-sub {
+  background: var(--cream);
+  border-bottom: 1px solid var(--border);
+}
+.hdr-sub .hdr-lbl { color: var(--text-muted); }
+.hdr-sub .hdr-title { color: var(--olive-dark); }
+.hdr-sub .hdr-title small { color: var(--text-muted); }
+.hdr-sub .back-btn { color: var(--olive); font-weight: 500; }
+.hdr-sub .edit-btn svg { stroke: var(--olive); }
 
 /* ── Scroll area ── */
 .scroll { flex: 1; overflow-y: auto; padding: 1rem; padding-bottom: 88px; }
@@ -149,7 +164,7 @@ select.field-input { appearance: none; }
 .pend-row:last-child { border-bottom: none; }
 .back-btn { background: none; border: none; color: #a8b89a; font-size: 13px; cursor: pointer; font-family: 'DM Sans', sans-serif; padding: 0; margin-bottom: 8px; }
 .finance-card { background: var(--cream-dark); border-radius: 16px; padding: 1.25rem; margin-bottom: 10px; border: .5px solid #e0d8c8; }
-.finance-bal { font-family: 'Cormorant Garamond', serif; font-size: 36px; font-weight: 500; color: var(--olive); margin: 6px 0 14px; }
+.finance-bal { font-family: 'DM Sans', sans-serif; font-size: 36px; font-weight: 500; color: var(--olive); margin: 6px 0 14px; }
 .month-pills { display: flex; gap: 6px; margin-top: 10px; overflow-x: auto; }
 .month-pills::-webkit-scrollbar { display: none; }
 .mpill { background: rgba(255,255,255,.1); color: #a8b89a; font-size: 12px; padding: 5px 13px; border-radius: 20px; cursor: pointer; white-space: nowrap; border: 1.5px solid transparent; font-family: 'DM Sans', sans-serif; }

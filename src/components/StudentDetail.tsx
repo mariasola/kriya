@@ -47,10 +47,11 @@ export default function StudentDetail({ store, studentId, onBack }: Props) {
     }
   }
 
+  // Sub-pantalla sin tab propio → header crema. Regla: verde (--olive) = pantalla principal con tab; crema (--cream) = subpantalla sin tab.
   return (
     <>
       <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
-        <div className="hdr">
+        <div className="hdr hdr-sub">
           <button className="back-btn" onClick={onBack}>← Volver</button>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, position: 'relative' }}>
             <div className="avatar" style={{ width: 48, height: 48, fontSize: 15, background: '#c8d9a0', color: '#2a3a10', flexShrink: 0 }}>
@@ -58,10 +59,10 @@ export default function StudentDetail({ store, studentId, onBack }: Props) {
             </div>
             <div style={{ flex: 1, paddingRight: 28 }}>
               <div className="hdr-title" style={{ marginBottom: 0 }}>{student.name}</div>
-              <div style={{ fontSize: 13, color: '#a8b89a' }}>{student.phone || 'Sin teléfono'}</div>
+              <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{student.phone || 'Sin teléfono'}</div>
             </div>
-            <button className="edit-btn" onClick={() => { setForm({ name: student.name, phone: student.phone, notes: student.notes }); setEditSheet(true) }}>
-              <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            <button className="edit-btn" style={{ background: 'var(--cream-dark)', border: '1px solid var(--border)', borderRadius: 8, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }} onClick={() => { setForm({ name: student.name, phone: student.phone, notes: student.notes }); setEditSheet(true) }}>
+              <svg viewBox="0 0 24 24" style={{ width: 16, height: 16, stroke: 'var(--olive)', fill: 'none', strokeWidth: 1.8 }}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </button>
           </div>
         </div>

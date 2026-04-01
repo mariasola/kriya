@@ -45,6 +45,21 @@ export default function StudentsScreen({ store, onOpenStudent }: Props) {
         <div className="hdr">
           <div className="hdr-lbl">Directorio</div>
           <div className="hdr-title">Alumnas</div>
+          <div className="metrics">
+            <div className="metric">
+              <div className="metric-val">{data.students.length}</div>
+              <div className="metric-lbl">alumnas</div>
+            </div>
+            {/* Suscritas y Puntuales: placeholders visuales para cuando existan suscripciones */}
+            <div className="metric" style={{ opacity: 0.35 }}>
+              <div className="metric-val">—</div>
+              <div className="metric-lbl">suscritas</div>
+            </div>
+            <div className="metric" style={{ opacity: 0.35 }}>
+              <div className="metric-val">—</div>
+              <div className="metric-lbl">puntuales</div>
+            </div>
+          </div>
         </div>
         <div className="scroll">
           <div className="card">

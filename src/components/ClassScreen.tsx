@@ -85,10 +85,11 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
   const curEnrollment = statusSheet ? data.enrollments.find(e => e.id === statusSheet) : null
   const curStudent = curEnrollment ? data.students.find(s => s.id === curEnrollment.studentId) : null
 
+  // Sub-pantalla sin tab propio → header crema. Regla: verde (--olive) = pantalla principal con tab; crema (--cream) = subpantalla sin tab.
   return (
     <>
       <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
-        <div className="hdr">
+        <div className="hdr hdr-sub">
           <button className="back-btn" onClick={onBack}>← Volver</button>
           <div style={{ position: 'relative' }}>
             <div className="hdr-lbl">{new Date(cls.date + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })} · {cls.time}</div>
@@ -97,13 +98,22 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
               <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </button>
           </div>
-          <div className="metrics">
-            <div className="metric"><div className="metric-val">{ins.length}</div><div className="metric-lbl">alumnas</div></div>
-            <div className="metric"><div className="metric-val green">{formatEur(cobrado)}</div><div className="metric-lbl">cobrado</div></div>
-            <div className="metric"><div className="metric-val amber">{formatEur(pendiente)}</div><div className="metric-lbl">pendiente</div></div>
-          </div>
         </div>
         <div className="scroll">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 16 }}>
+            <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 10, padding: 10, textAlign: 'center' }}>
+              <div style={{ fontSize: 19, fontWeight: 500, color: 'var(--text)' }}>{ins.length}</div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 3 }}>alumnas</div>
+            </div>
+            <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 10, padding: 10, textAlign: 'center' }}>
+              <div style={{ fontSize: 19, fontWeight: 500, color: 'var(--green-text)' }}>{formatEur(cobrado)}</div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 3 }}>cobrado</div>
+            </div>
+            <div style={{ background: 'white', border: '1px solid var(--border)', borderRadius: 10, padding: 10, textAlign: 'center' }}>
+              <div style={{ fontSize: 19, fontWeight: 500, color: 'var(--amber-text)' }}>{formatEur(pendiente)}</div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 3 }}>pendiente</div>
+            </div>
+          </div>
           <div className="sala-ic">
             <div><div className="card-row-lbl">Alquiler sala</div><div className="card-row-val">{formatEur(cls.roomCost)}</div></div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

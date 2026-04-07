@@ -1,16 +1,13 @@
 'use client'
 import { useState } from 'react'
 import { StudentsScreenStore } from '@/hooks/useStore'
-import { getInitials } from '@/lib/data'
+import { getInitials } from '@/lib/calculations'
 import Sheet from './Sheet'
+import LoadingScreen from './ui/LoadingScreen'
 
 interface Props { store: StudentsScreenStore; onOpenStudent: (id: string) => void }
 
-function isValidSpanishPhone(phone: string): boolean {
-  if (!phone) return true
-  const stripped = phone.replace(/[\s\-().]/g, '')
-  return /^(\+34|0034|34)?[6-9]\d{8}$/.test(stripped)
-}
+import { isValidSpanishPhone } from '@/lib/utils'
 
 export default function StudentsScreen({ store, onOpenStudent }: Props) {
   const { data, loading, addStudent } = store
@@ -19,11 +16,7 @@ export default function StudentsScreen({ store, onOpenStudent }: Props) {
   const [phoneError, setPhoneError] = useState('')
   const [saving, setSaving] = useState(false)
 
-  if (loading) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, background: '#f5f0e8' }}>
-      <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, color: '#8a7a6a', fontStyle: 'italic' }}>Cargando...</p>
-    </div>
-  )
+  if (loading) return <LoadingScreen />
 
   async function handleSave() {
     if (!form.name.trim()) return

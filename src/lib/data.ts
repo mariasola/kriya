@@ -1,28 +1,27 @@
 import { supabase } from './supabase'
 import { AppData, Room, Class, Student, Enrollment } from './types'
 
-export { getRevenue, getPending, getInitials, formatEur } from './calculations'
 
 // ── Mappers (snake_case DB → camelCase frontend) ───────────────────────────
 
-function mapRoom(r: any): Room {
+export function mapRoom(r: any): Room {
   return { id: r.id, name: r.name, address: r.address || '' }
 }
 
-function mapStudent(s: any): Student {
+export function mapStudent(s: any): Student {
   return { id: s.id, name: s.name, phone: s.phone || '', notes: s.notes || '' }
 }
 
-function mapClass(c: any): Class {
+export function mapClass(c: any): Class {
   return {
     id: c.id, name: c.name, date: c.date, time: c.time,
-    roomId: c.room_id || '', capacity: c.capacity,
+    roomId: c.room_id || null, capacity: c.capacity,
     price: c.price ?? 20,
     roomCost: c.room_cost, roomPaid: c.room_paid
   }
 }
 
-function mapEnrollment(e: any): Enrollment {
+export function mapEnrollment(e: any): Enrollment {
   return {
     id: e.id, classId: e.class_id, studentId: e.student_id,
     status: e.status, deposit: e.deposit, total: e.total
@@ -48,11 +47,12 @@ function unwrap<T>(result: { data: T | null; error: any }): T {
 // ── Loaders ────────────────────────────────────────────────────────────────
 
 export async function loadData(): Promise<AppData> {
+  const userId = await getUserId()
   const [rooms, students, classes, enrollments] = await Promise.all([
-    supabase.from('rooms').select('*').order('created_at'),
-    supabase.from('students').select('*').order('name'),
-    supabase.from('classes').select('*').order('date'),
-    supabase.from('enrollments').select('*'),
+    supabase.from('rooms').select('*').eq('user_id', userId).order('created_at'),
+    supabase.from('students').select('*').eq('user_id', userId).order('name'),
+    supabase.from('classes').select('*').eq('user_id', userId).order('date'),
+    supabase.from('enrollments').select('*').eq('user_id', userId),
   ])
   return {
     rooms: (rooms.data || []).map(mapRoom),
@@ -73,9 +73,10 @@ export async function createRoom(data: Omit<Room, 'id'>): Promise<Room> {
 }
 
 export async function updateRoom(id: string, changes: Partial<Room>): Promise<Room> {
+  const userId = await getUserId()
   const row = unwrap(await supabase.from('rooms')
     .update({ name: changes.name, address: changes.address })
-    .eq('id', id).select().single())
+    .eq('id', id).eq('user_id', userId).select().single())
   return mapRoom(row)
 }
 
@@ -90,9 +91,10 @@ export async function createStudent(data: Omit<Student, 'id'>): Promise<Student>
 }
 
 export async function updateStudent(id: string, changes: Partial<Student>): Promise<Student> {
+  const userId = await getUserId()
   const row = unwrap(await supabase.from('students')
     .update({ name: changes.name, phone: changes.phone, notes: changes.notes })
-    .eq('id', id).select().single())
+    .eq('id', id).eq('user_id', userId).select().single())
   return mapStudent(row)
 }
 
@@ -112,6 +114,7 @@ export async function createClass(data: Omit<Class, 'id'>): Promise<Class> {
 }
 
 export async function updateClass(id: string, changes: Partial<Class>): Promise<Class> {
+  const userId = await getUserId()
   const update: any = {}
   if (changes.name !== undefined) update.name = changes.name
   if (changes.date !== undefined) update.date = changes.date
@@ -122,12 +125,13 @@ export async function updateClass(id: string, changes: Partial<Class>): Promise<
   if (changes.roomCost !== undefined) update.room_cost = changes.roomCost
   if (changes.roomPaid !== undefined) update.room_paid = changes.roomPaid
   const row = unwrap(await supabase.from('classes')
-    .update(update).eq('id', id).select().single())
+    .update(update).eq('id', id).eq('user_id', userId).select().single())
   return mapClass(row)
 }
 
 export async function deleteClass(id: string): Promise<void> {
-  const { error } = await supabase.from('classes').delete().eq('id', id)
+  const userId = await getUserId()
+  const { error } = await supabase.from('classes').delete().eq('id', id).eq('user_id', userId)
   if (error) throw new Error(error.message)
 }
 
@@ -142,11 +146,12 @@ export async function createEnrollment(classId: string, studentId: string): Prom
 }
 
 export async function updateEnrollment(id: string, changes: Partial<Enrollment>): Promise<Enrollment> {
+  const userId = await getUserId()
   const update: any = {}
   if (changes.status !== undefined) update.status = changes.status
   if (changes.deposit !== undefined) update.deposit = changes.deposit
   if (changes.total !== undefined) update.total = changes.total
   const row = unwrap(await supabase.from('enrollments')
-    .update(update).eq('id', id).select().single())
+    .update(update).eq('id', id).eq('user_id', userId).select().single())
   return mapEnrollment(row)
 }

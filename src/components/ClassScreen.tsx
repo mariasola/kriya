@@ -1,9 +1,12 @@
 'use client'
 import { useState } from 'react'
 import { ClassScreenStore } from '@/hooks/useStore'
-import { getRevenue, getPending, getInitials, formatEur } from '@/lib/data'
+import { getRevenue, getPending, getInitials, formatEur } from '@/lib/calculations'
 import { EnrollmentStatus } from '@/lib/types'
 import Sheet from './Sheet'
+import LoadingScreen from './ui/LoadingScreen'
+import StatusBadge from './ui/StatusBadge'
+import InlineRoomForm from './ui/InlineRoomForm'
 
 interface Props { store: ClassScreenStore; classId: string; onBack: () => void }
 
@@ -13,12 +16,6 @@ const STATUS_OPTS: { v: EnrollmentStatus; l: string; c: string }[] = [
   { v: 'paid', l: 'Pagada completo', c: 'badge-paid' },
   { v: 'no_show', l: 'No vino', c: 'badge-novino' },
 ]
-
-function statusBadge(s: EnrollmentStatus, deposit: number) {
-  const map = { paid: 'badge-paid', deposit_paid: 'badge-reserva', registered: 'badge-apuntada', no_show: 'badge-novino' }
-  const label = s === 'paid' ? 'Pagada' : s === 'deposit_paid' ? `Reserva ${deposit}€` : s === 'registered' ? 'Apuntada' : 'No vino'
-  return <span className={`badge ${map[s]}`}>{label}</span>
-}
 
 export default function ClassScreen({ store, classId, onBack }: Props) {
   const { data, loading, updateClass, deleteClass, addEnrollment, setEnrollmentStatus, addStudent, addRoom } = store
@@ -31,21 +28,15 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
   const [editSheet, setEditSheet] = useState(false)
   const [addSheet, setAddSheet] = useState(false)
   const [statusSheet, setStatusSheet] = useState<string | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const [addInput, setAddInput] = useState('')
   const [selStudent, setSelStudent] = useState<string | null>(null)
   const [editForm, setEditForm] = useState({ name: cls?.name || '', date: cls?.date || '', time: cls?.time || '', capacity: String(cls?.capacity || 8), price: String(cls?.price || 20), roomCost: String(cls?.roomCost || 0), roomId: cls?.roomId || '' })
   const [showInlineRoom, setShowInlineRoom] = useState(false)
-  const [inlineRoomName, setInlineRoomName] = useState('')
-  const [inlineRoomAddress, setInlineRoomAddress] = useState('')
   const [savingEdit, setSavingEdit] = useState(false)
   const [savingAdd, setSavingAdd] = useState(false)
-  const [savingRoom, setSavingRoom] = useState(false)
 
-  if (loading || !cls) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, background: '#f5f0e8' }}>
-      <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, color: '#8a7a6a', fontStyle: 'italic' }}>Cargando...</p>
-    </div>
-  )
+  if (loading || !cls) return <LoadingScreen />
 
   const existingIds = ins.map(e => e.studentId)
   const suggestions = data.students.filter(s => s.name.toLowerCase().includes(addInput.toLowerCase()) && !existingIds.includes(s.id))
@@ -139,7 +130,7 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
                     <div style={{ fontSize: 14, fontWeight: 500, color: '#2a2a2a' }}>{s.name}</div>
                     <div style={{ fontSize: 12, color: '#8a7a6a', marginTop: 2 }}>{s.phone || '—'}</div>
                   </div>
-                  {statusBadge(e.status, e.deposit)}
+                  <StatusBadge status={e.status} deposit={e.deposit} />
                 </div>
               )
             })}
@@ -179,41 +170,28 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
           </>
         )}
         {(data.rooms.length === 0 || showInlineRoom) && (
-          <div style={{ background: '#f5f0e8', borderRadius: 10, padding: '12px', border: '.5px solid #d8d0c0', marginBottom: 8 }}>
-            <div style={{ fontSize: 12, color: '#8a7a6a', marginBottom: 8 }}>Nueva sala</div>
-            <input className="field-input" placeholder="Nombre de la sala" value={inlineRoomName} onChange={e => setInlineRoomName(e.target.value)} style={{ marginBottom: 8 }} />
-            <input className="field-input" placeholder="Dirección (opcional)" value={inlineRoomAddress} onChange={e => setInlineRoomAddress(e.target.value)} style={{ marginBottom: 8 }} />
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn-secondary" disabled={savingRoom} onClick={async () => {
-                if (!inlineRoomName.trim()) return
-                if (savingRoom) return
-                setSavingRoom(true)
-                try {
-                  const newRoom = await addRoom({ name: inlineRoomName.trim(), address: inlineRoomAddress.trim() })
-                  setEditForm(f => ({ ...f, roomId: newRoom.id }))
-                  setInlineRoomName('')
-                  setInlineRoomAddress('')
-                  setShowInlineRoom(false)
-                } finally {
-                  setSavingRoom(false)
-                }
-              }} style={{ flex: 1, padding: '.65rem', fontSize: 13, opacity: savingRoom ? 0.6 : 1 }}>{savingRoom ? 'Guardando...' : 'Guardar sala'}</button>
-              {data.rooms.length > 0 && (
-                <button className="btn-ghost" style={{ flex: 1, padding: '.65rem', fontSize: 13 }} onClick={() => { setShowInlineRoom(false); setInlineRoomName(''); setInlineRoomAddress('') }}>Cancelar</button>
-              )}
-            </div>
-          </div>
+          <InlineRoomForm
+            hasExistingRooms={data.rooms.length > 0}
+            addRoom={addRoom}
+            onSaved={room => { setEditForm(f => ({ ...f, roomId: room.id })); setShowInlineRoom(false) }}
+            onCancel={() => setShowInlineRoom(false)}
+          />
         )}
         <button className="btn-primary" onClick={handleSaveEdit} disabled={savingEdit} style={{ opacity: savingEdit ? 0.6 : 1 }}>{savingEdit ? 'Guardando...' : 'Guardar'}</button>
         <button className="btn-ghost" onClick={() => setEditSheet(false)}>Cancelar</button>
         <div style={{ marginTop: 16, borderTop: '.5px solid #e8e0d0', paddingTop: 16 }}>
-          <button className="btn-destructive" onClick={async () => {
-            if (!window.confirm('¿Eliminar esta clase? Esta acción no se puede deshacer.')) return
-            await deleteClass(classId)
-            setEditSheet(false)
-            onBack()
-          }}>Eliminar clase</button>
+          <button className="btn-destructive" onClick={() => { setEditSheet(false); setConfirmDelete(true) }}>Eliminar clase</button>
         </div>
+      </Sheet>
+
+      <Sheet open={confirmDelete} onClose={() => setConfirmDelete(false)} title="Eliminar clase">
+        <p style={{ fontSize: 14, color: '#5a4a3a', marginBottom: 16, lineHeight: 1.5 }}>¿Eliminar <strong>{cls.name}</strong>? Esta acción no se puede deshacer.</p>
+        <button className="btn-destructive" onClick={async () => {
+          await deleteClass(classId)
+          setConfirmDelete(false)
+          onBack()
+        }}>Sí, eliminar</button>
+        <button className="btn-ghost" onClick={() => setConfirmDelete(false)}>Cancelar</button>
       </Sheet>
 
       <Sheet open={addSheet} onClose={() => { setAddSheet(false); setAddInput(''); setSelStudent(null) }} title="Añadir alumna">

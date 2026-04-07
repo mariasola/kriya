@@ -1,23 +1,14 @@
 'use client'
 import { useState } from 'react'
 import { StudentDetailStore } from '@/hooks/useStore'
-import { getInitials } from '@/lib/data'
-import { EnrollmentStatus } from '@/lib/types'
+import { getInitials } from '@/lib/calculations'
 import Sheet from './Sheet'
+import LoadingScreen from './ui/LoadingScreen'
+import StatusBadge from './ui/StatusBadge'
 
 interface Props { store: StudentDetailStore; studentId: string; onBack: () => void }
 
-function statusBadge(s: EnrollmentStatus, deposit: number) {
-  const map = { paid: 'badge-paid', deposit_paid: 'badge-reserva', registered: 'badge-apuntada', no_show: 'badge-novino' }
-  const label = s === 'paid' ? 'Pagada' : s === 'deposit_paid' ? `Reserva ${deposit}€` : s === 'registered' ? 'Apuntada' : 'No vino'
-  return <span className={`badge ${map[s]}`}>{label}</span>
-}
-
-function isValidSpanishPhone(phone: string): boolean {
-  if (!phone) return true
-  const stripped = phone.replace(/[\s\-().]/g, '')
-  return /^(\+34|0034|34)?[6-9]\d{8}$/.test(stripped)
-}
+import { isValidSpanishPhone } from '@/lib/utils'
 
 export default function StudentDetail({ store, studentId, onBack }: Props) {
   const { data, loading, updateStudent } = store
@@ -28,11 +19,7 @@ export default function StudentDetail({ store, studentId, onBack }: Props) {
   const [phoneError, setPhoneError] = useState('')
   const [saving, setSaving] = useState(false)
 
-  if (loading || !student) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, background: '#f5f0e8' }}>
-      <p style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, color: '#8a7a6a', fontStyle: 'italic' }}>Cargando...</p>
-    </div>
-  )
+  if (loading || !student) return <LoadingScreen />
 
   async function handleSave() {
     if (!form.name.trim()) return
@@ -85,7 +72,7 @@ export default function StudentDetail({ store, studentId, onBack }: Props) {
                     <div style={{ fontSize: 14, fontWeight: 500, color: '#2a2a2a' }}>{cls.name}</div>
                     <div style={{ fontSize: 12, color: '#8a7a6a' }}>{new Date(cls.date + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })} · {cls.time}</div>
                   </div>
-                  {statusBadge(e.status, e.deposit)}
+                  <StatusBadge status={e.status} deposit={e.deposit} />
                 </div>
               )
             })}

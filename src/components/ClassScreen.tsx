@@ -107,15 +107,16 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
           </div>
           <div className="sala-ic">
             <div><div className="card-row-lbl">Alquiler sala</div><div className="card-row-val">{formatEur(cls.roomCost)}</div></div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 13, color: '#5a4a3a' }}>Sala pagada</span>
-              <button
-                onClick={() => updateClass(classId, { roomPaid: !cls.roomPaid })}
-                style={{ width: 44, height: 26, borderRadius: 13, border: 'none', cursor: 'pointer', background: cls.roomPaid ? '#4a8a5a' : '#d0c8b8', position: 'relative', transition: 'background .2s', flexShrink: 0, padding: 0 }}
-              >
-                <span style={{ position: 'absolute', top: 3, left: cls.roomPaid ? 21 : 3, width: 20, height: 20, borderRadius: '50%', background: '#fff', transition: 'left .2s', display: 'block', boxShadow: '0 1px 3px rgba(0,0,0,.2)' }} />
-              </button>
-            </div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={cls.roomPaid}
+                onChange={() => updateClass(classId, { roomPaid: !cls.roomPaid })}
+                style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
+              />
+              <span className={`cb-label${cls.roomPaid ? ' checked' : ''}`}>Sala pagada</span>
+              <span className={`cb-box${cls.roomPaid ? ' checked' : ''}`} aria-hidden="true" />
+            </label>
           </div>
           <div className="dlbl" style={{ marginBottom: 8 }}>Alumnas</div>
           <div className="card">

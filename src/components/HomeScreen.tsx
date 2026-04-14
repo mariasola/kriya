@@ -100,10 +100,12 @@ export default function HomeScreen({ store, onOpenClass, isActiveTab }: Props) {
               })}
             </div>
           ))}
-          <div className="legend">
-            <div className="legend-item"><span className="dot-g" />Sala pagada</div>
-            <div className="legend-item"><span className="dot-r" />Sin pagar</div>
-          </div>
+          {keys.length > 0 && (
+            <div className="legend">
+              <div className="legend-item"><span className="dot-g" />Sala pagada</div>
+              <div className="legend-item"><span className="dot-r" />Sin pagar</div>
+            </div>
+          )}
         </div>
       </div>
 

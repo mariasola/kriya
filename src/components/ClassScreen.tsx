@@ -2,11 +2,39 @@
 import { useState } from 'react'
 import { ClassScreenStore } from '@/hooks/useStore'
 import { getRevenue, getPending, getInitials, formatEur } from '@/lib/calculations'
-import { EnrollmentStatus } from '@/lib/types'
+import { EnrollmentStatus, Enrollment, Subscription, Class } from '@/lib/types'
 import Sheet from './Sheet'
 import LoadingScreen from './ui/LoadingScreen'
 import StatusBadge from './ui/StatusBadge'
 import InlineRoomForm from './ui/InlineRoomForm'
+
+function classifyEnrollments(
+  enrollments: Enrollment[],
+  subscriptions: Subscription[],
+  allEnrollments: Enrollment[],
+  allClasses: Class[],
+  classSeriesId: string,
+  classDate: string,
+  classMonth: string
+): { subscribed: Enrollment[]; occasional: Enrollment[]; newStudents: Enrollment[] } {
+  const priorSeriesClassIds = new Set(
+    allClasses.filter(c => c.seriesId === classSeriesId && c.date < classDate).map(c => c.id)
+  )
+  const subscribed: Enrollment[] = []
+  const occasional: Enrollment[] = []
+  const newStudents: Enrollment[] = []
+  for (const e of enrollments) {
+    const hasSub = subscriptions.some(s => s.studentId === e.studentId && s.seriesId === classSeriesId && s.month === classMonth)
+    if (hasSub) {
+      subscribed.push(e)
+    } else {
+      const hasPrior = allEnrollments.some(ae => ae.studentId === e.studentId && priorSeriesClassIds.has(ae.classId))
+      if (hasPrior) occasional.push(e)
+      else newStudents.push(e)
+    }
+  }
+  return { subscribed, occasional, newStudents }
+}
 
 interface Props { store: ClassScreenStore; classId: string; onBack: () => void }
 
@@ -76,6 +104,12 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
   const curEnrollment = statusSheet ? data.enrollments.find(e => e.id === statusSheet) : null
   const curStudent = curEnrollment ? data.students.find(s => s.id === curEnrollment.studentId) : null
 
+  const classMonth = cls.date.slice(0, 7) + '-01'
+  const hasSeries = !!cls.seriesId
+  const { subscribed, occasional, newStudents } = hasSeries
+    ? classifyEnrollments(ins, data.subscriptions, data.enrollments, data.classes, cls.seriesId!, cls.date, classMonth)
+    : { subscribed: [], occasional: [], newStudents: [] }
+
   // Sub-pantalla sin tab propio → header crema. Regla: verde (--olive) = pantalla principal con tab; crema (--cream) = subpantalla sin tab.
   return (
     <>
@@ -119,23 +153,109 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
             </label>
           </div>
           <div className="dlbl" style={{ marginBottom: 8 }}>Alumnas</div>
-          <div className="card">
-            {ins.length === 0 && <div className="card-row"><span style={{ fontSize: 13, color: '#8a7a6a' }}>Sin alumnas apuntadas aún</span></div>}
-            {ins.map(e => {
-              const s = data.students.find(x => x.id === e.studentId)
-              if (!s) return null
-              return (
-                <div key={e.id} className="arow" onClick={() => setStatusSheet(e.id)}>
-                  <div className="avatar">{getInitials(s.name)}</div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 14, fontWeight: 500, color: '#2a2a2a' }}>{s.name}</div>
-                    <div style={{ fontSize: 12, color: '#8a7a6a', marginTop: 2 }}>{s.phone || '—'}</div>
+          {ins.length === 0 && (
+            <div className="card">
+              <div className="card-row"><span style={{ fontSize: 13, color: '#8a7a6a' }}>Sin alumnas apuntadas aún</span></div>
+            </div>
+          )}
+          {ins.length > 0 && !hasSeries && (
+            <div className="card">
+              {ins.map(e => {
+                const s = data.students.find(x => x.id === e.studentId)
+                if (!s) return null
+                return (
+                  <div key={e.id} className="arow" onClick={() => setStatusSheet(e.id)}>
+                    <div className="avatar">{getInitials(s.name)}</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 14, fontWeight: 500, color: '#2a2a2a' }}>{s.name}</div>
+                      <div style={{ fontSize: 12, color: '#8a7a6a', marginTop: 2 }}>{s.phone || '—'}</div>
+                    </div>
+                    <StatusBadge status={e.status} deposit={e.deposit} />
                   </div>
-                  <StatusBadge status={e.status} deposit={e.deposit} />
+                )
+              })}
+            </div>
+          )}
+          {ins.length > 0 && hasSeries && (
+            <>
+              {subscribed.length > 0 && (
+                <div style={{ marginBottom: 10 }}>
+                  <div style={{ fontSize: 9, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4, marginLeft: 2 }}>Suscritas</div>
+                  <div className="card">
+                    {subscribed.map(e => {
+                      const s = data.students.find(x => x.id === e.studentId)
+                      if (!s) return null
+                      const sub = data.subscriptions.find(sb => sb.studentId === e.studentId && sb.seriesId === cls.seriesId! && sb.month === classMonth)
+                      const isPaid = sub?.status === 'paid'
+                      return (
+                        <div key={e.id} className="arow" onClick={() => setStatusSheet(e.id)}>
+                          <div className="avatar" style={{ background: '#c8d9a0', color: '#3d4a2e' }}>{getInitials(s.name)}</div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 14, fontWeight: 500, color: '#2a2a2a' }}>{s.name}</div>
+                            <div style={{ fontSize: 12, color: '#8a7a6a', marginTop: 2 }}>{s.phone || '—'}</div>
+                          </div>
+                          {isPaid
+                            ? <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="#52582e" strokeWidth="1.2"/><path d="M4.5 7l1.8 1.8 3-3.6" stroke="#52582e" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            : <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="#b85c38" strokeWidth="1.2"/></svg>
+                          }
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
-              )
-            })}
-          </div>
+              )}
+              {occasional.length > 0 && (
+                <div style={{ marginBottom: 10 }}>
+                  <div style={{ fontSize: 9, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4, marginLeft: 2 }}>Puntuales</div>
+                  <div className="card">
+                    {occasional.map(e => {
+                      const s = data.students.find(x => x.id === e.studentId)
+                      if (!s) return null
+                      const isPaid = e.status === 'paid'
+                      return (
+                        <div key={e.id} className="arow" onClick={() => setStatusSheet(e.id)}>
+                          <div className="avatar" style={{ background: '#e8e4f0', color: '#57467b' }}>{getInitials(s.name)}</div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 14, fontWeight: 500, color: '#2a2a2a' }}>{s.name}</div>
+                            <div style={{ fontSize: 12, color: '#8a7a6a', marginTop: 2 }}>{s.phone || '—'}</div>
+                          </div>
+                          {isPaid
+                            ? <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="#52582e" strokeWidth="1.2"/><path d="M4.5 7l1.8 1.8 3-3.6" stroke="#52582e" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            : <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="#b85c38" strokeWidth="1.2"/></svg>
+                          }
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+              {newStudents.length > 0 && (
+                <div style={{ marginBottom: 10 }}>
+                  <div style={{ fontSize: 9, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4, marginLeft: 2 }}>Nuevas</div>
+                  <div className="card">
+                    {newStudents.map(e => {
+                      const s = data.students.find(x => x.id === e.studentId)
+                      if (!s) return null
+                      const isPaid = e.status === 'paid'
+                      return (
+                        <div key={e.id} className="arow" onClick={() => setStatusSheet(e.id)}>
+                          <div className="avatar" style={{ background: '#dde6ee', color: '#355070' }}>{getInitials(s.name)}</div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 14, fontWeight: 500, color: '#2a2a2a' }}>{s.name}</div>
+                            <div style={{ fontSize: 12, color: '#8a7a6a', marginTop: 2 }}>{s.phone || '—'}</div>
+                          </div>
+                          {isPaid
+                            ? <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="#52582e" strokeWidth="1.2"/><path d="M4.5 7l1.8 1.8 3-3.6" stroke="#52582e" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            : <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="#b85c38" strokeWidth="1.2"/></svg>
+                          }
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
           <button className="btn-secondary" onClick={() => setAddSheet(true)}>+ Añadir alumna</button>
         </div>
       </div>

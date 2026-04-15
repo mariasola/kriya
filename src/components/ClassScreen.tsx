@@ -59,7 +59,7 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [addInput, setAddInput] = useState('')
   const [selStudent, setSelStudent] = useState<string | null>(null)
-  const [editForm, setEditForm] = useState({ name: cls?.name || '', date: cls?.date || '', time: cls?.time || '', capacity: String(cls?.capacity || 8), price: String(cls?.price || 20), roomCost: String(cls?.roomCost || 0), roomId: cls?.roomId || '' })
+  const [editForm, setEditForm] = useState({ name: cls?.name || '', date: cls?.date || '', time: cls?.time || '', capacity: String(cls?.capacity || 8), price: String(cls?.price || 20), roomCost: String(cls?.roomCost || 0), roomId: cls?.roomId || '', seriesId: cls?.seriesId || '' })
   const [showInlineRoom, setShowInlineRoom] = useState(false)
   const [savingEdit, setSavingEdit] = useState(false)
   const [savingAdd, setSavingAdd] = useState(false)
@@ -73,7 +73,17 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
     if (savingEdit) return
     setSavingEdit(true)
     try {
-      await updateClass(classId, { name: editForm.name, date: editForm.date, time: editForm.time, capacity: parseInt(editForm.capacity) || 8, price: parseInt(editForm.price) || 20, roomCost: parseInt(editForm.roomCost) || 0, roomId: editForm.roomId || null })
+      const hasGroup = !!editForm.seriesId
+      await updateClass(classId, {
+        name: editForm.name,
+        date: editForm.date,
+        time: editForm.time,
+        capacity: parseInt(editForm.capacity) || 8,
+        price: hasGroup ? 0 : (parseInt(editForm.price) || 20),
+        roomCost: parseInt(editForm.roomCost) || 0,
+        roomId: editForm.roomId || null,
+        seriesId: hasGroup ? editForm.seriesId : null
+      })
       setEditSheet(false)
     } finally {
       setSavingEdit(false)
@@ -119,7 +129,7 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
           <div style={{ position: 'relative' }}>
             <div className="hdr-lbl">{new Date(cls.date + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })} · {cls.time}</div>
             <div className="hdr-title">{cls.name}{room && <small>{room.name} · {room.address}</small>}</div>
-            <button className="edit-btn" onClick={() => { setEditForm({ name: cls.name, date: cls.date, time: cls.time, capacity: String(cls.capacity), price: String(cls.price), roomCost: String(cls.roomCost), roomId: cls.roomId || '' }); setShowInlineRoom(false); setEditSheet(true) }}>
+            <button className="edit-btn" onClick={() => { setEditForm({ name: cls.name, date: cls.date, time: cls.time, capacity: String(cls.capacity), price: String(cls.price), roomCost: String(cls.roomCost), roomId: cls.roomId || '', seriesId: cls.seriesId || '' }); setShowInlineRoom(false); setEditSheet(true) }}>
               <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </button>
           </div>
@@ -270,12 +280,7 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
         <div style={{ height: 12 }} />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           <div><label className="field-label">Capacidad</label><input className="field-input" type="number" value={editForm.capacity} onChange={e => setEditForm(f => ({ ...f, capacity: e.target.value }))} style={{ marginBottom: 0 }} /></div>
-          <div><label className="field-label">Precio clase (€)</label><input className="field-input" type="number" value={editForm.price} onChange={e => setEditForm(f => ({ ...f, price: e.target.value }))} style={{ marginBottom: 0 }} /></div>
-        </div>
-        <div style={{ height: 12 }} />
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           <div><label className="field-label">Coste sala (€)</label><input className="field-input" type="number" value={editForm.roomCost} onChange={e => setEditForm(f => ({ ...f, roomCost: e.target.value }))} style={{ marginBottom: 0 }} /></div>
-          <div />
         </div>
         <div style={{ height: 12 }} />
         <label className="field-label">Sala</label>
@@ -297,6 +302,30 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
             onSaved={room => { setEditForm(f => ({ ...f, roomId: room.id })); setShowInlineRoom(false) }}
             onCancel={() => setShowInlineRoom(false)}
           />
+        )}
+        {data.classSeries.length > 0 && (
+          <>
+            <div style={{ height: 12 }} />
+            <label className="field-label">Grupo (opcional)</label>
+            <select className="field-input" value={editForm.seriesId} onChange={e => setEditForm(f => ({ ...f, seriesId: e.target.value }))}>
+              <option value="">Sin grupo</option>
+              {data.classSeries.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          </>
+        )}
+        <div style={{ height: 12 }} />
+        {editForm.seriesId ? (
+          <>
+            <label className="field-label">Precio clase</label>
+            <div style={{ padding: '11px 14px', background: '#f5f0e8', borderRadius: 10, fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic', marginBottom: 12 }}>
+              El precio se calcula automáticamente desde el grupo
+            </div>
+          </>
+        ) : (
+          <>
+            <label className="field-label">Precio clase (€)</label>
+            <input className="field-input" type="number" value={editForm.price} onChange={e => setEditForm(f => ({ ...f, price: e.target.value }))} />
+          </>
         )}
         <button className="btn-primary" onClick={handleSaveEdit} disabled={savingEdit} style={{ opacity: savingEdit ? 0.6 : 1 }}>{savingEdit ? 'Guardando...' : 'Guardar'}</button>
         <button className="btn-ghost" onClick={() => setEditSheet(false)}>Cancelar</button>

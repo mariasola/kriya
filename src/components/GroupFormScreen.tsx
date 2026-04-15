@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { ClassSeries } from '@/lib/types'
+import Sheet from './Sheet'
 
 interface Props {
   series?: ClassSeries
@@ -16,6 +17,7 @@ export default function GroupFormScreen({ series, onBack, onSave, onDelete }: Pr
     monthlyPrice: series?.monthlyPrice ? String(series.monthlyPrice) : '',
   })
   const [saving, setSaving] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
 
   async function handleSave() {
     if (!form.name.trim() || !form.monthlyPrice) return
@@ -62,10 +64,18 @@ export default function GroupFormScreen({ series, onBack, onSave, onDelete }: Pr
         <button className="btn-ghost" onClick={onBack}>Cancelar</button>
         {series && onDelete && (
           <div style={{ marginTop: 16, borderTop: '.5px solid #e8e0d0', paddingTop: 16 }}>
-            <button className="btn-destructive" onClick={onDelete}>Eliminar grupo</button>
+            <button className="btn-destructive" onClick={() => setConfirmDelete(true)}>Eliminar grupo</button>
           </div>
         )}
       </div>
+
+      <Sheet open={confirmDelete} onClose={() => setConfirmDelete(false)} title="Eliminar grupo">
+        <p style={{ fontSize: 14, color: '#5a4a3a', marginBottom: 16, lineHeight: 1.5 }}>
+          ¿Eliminar <strong>{series?.name}</strong>? Se eliminarán las suscripciones asociadas. Esta acción no se puede deshacer.
+        </p>
+        <button className="btn-destructive" onClick={() => { setConfirmDelete(false); onDelete?.() }}>Sí, eliminar</button>
+        <button className="btn-ghost" onClick={() => setConfirmDelete(false)}>Cancelar</button>
+      </Sheet>
     </div>
   )
 }

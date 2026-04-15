@@ -5,7 +5,7 @@ import { AppData, Student, Class, Room, EnrollmentStatus, ClassSeries, Subscript
 import {
   loadData, createRoom, updateRoom, createStudent, updateStudent,
   createClass, updateClass, deleteClass, createEnrollment, updateEnrollment,
-  createClassSeries, updateClassSeries, createSubscription, updateSubscriptionStatus,
+  createClassSeries, updateClassSeries, deleteClassSeries, createSubscription, updateSubscriptionStatus,
 } from '@/lib/data'
 import { computeEnrollmentChanges } from '@/lib/calculations'
 
@@ -184,6 +184,16 @@ export function useStore() {
     }
   }
 
+  const deleteClassSeriesItem = async (id: string) => {
+    try {
+      await deleteClassSeries(id)
+      await reload()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al eliminar serie')
+      throw e
+    }
+  }
+
   const addSubscription = async (sub: Omit<Subscription, 'id' | 'userId' | 'createdAt'>) => {
     try {
       const s = await createSubscription(sub)
@@ -226,7 +236,7 @@ export function useStore() {
     addClass, updateClass: updateClassItem, deleteClass: deleteClassItem,
     addStudent, updateStudent: updateStudentItem,
     addEnrollment, setEnrollmentStatus,
-    addClassSeries, updateClassSeries: updateClassSeriesItem,
+    addClassSeries, updateClassSeries: updateClassSeriesItem, deleteClassSeries: deleteClassSeriesItem,
     addSubscription, setSubscriptionStatus, toggleSubscriptionStatus,
   }
 }

@@ -66,7 +66,7 @@ function AuthenticatedApp() {
       )}
       {screen === 'groupDetail' && selectedSeries && (
         <GroupDetailScreen
-          series={selectedSeries}
+          series={store.data.classSeries.find(s => s.id === selectedSeries.id) || selectedSeries}
           classes={store.data.classes}
           subscriptions={store.data.subscriptions}
           students={store.data.students}
@@ -74,7 +74,7 @@ function AuthenticatedApp() {
           onEdit={() => pushScreen('groupForm')}
           onSelectClass={openClass}
           onToggleSubscriptionStatus={store.toggleSubscriptionStatus}
-          onAddSubscription={month => store.addSubscription({ studentId: '', seriesId: selectedSeries.id, month, price: null, status: 'pending' })}
+          onAddSubscription={(studentId, month) => store.addSubscription({ studentId, seriesId: selectedSeries.id, month, price: null, status: 'pending' })}
         />
       )}
       {screen === 'groupForm' && (
@@ -85,7 +85,12 @@ function AuthenticatedApp() {
             if (selectedSeries) await store.updateClassSeries(selectedSeries.id, d)
             else await store.addClassSeries(d)
           }}
-          onDelete={selectedSeries ? () => goBack() : undefined}
+          onDelete={selectedSeries ? async () => {
+            await store.deleteClassSeries(selectedSeries.id)
+            setSelectedSeries(null)
+            goBack()
+            goBack() // Go back twice: form → detail → groups list
+          } : undefined}
         />
       )}
       <BottomNav activeTab={tab} onNavigate={navigate} onSignOut={() => supabase.auth.signOut()} />

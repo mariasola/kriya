@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { ClassSeries, Subscription, Student, Class } from '@/lib/types'
 import { getInitials } from '@/lib/calculations'
+import Sheet from './Sheet'
 
 const MONTHS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
 
@@ -19,7 +20,7 @@ interface Props {
   onEdit: () => void
   onSelectClass: (classId: string) => void
   onToggleSubscriptionStatus: (subscriptionId: string) => void
-  onAddSubscription: (month: string) => void
+  onAddSubscription: (studentId: string, month: string) => void
 }
 
 export default function GroupDetailScreen({ series, classes, subscriptions, students, onBack, onEdit, onSelectClass, onToggleSubscriptionStatus, onAddSubscription }: Props) {
@@ -30,9 +31,13 @@ export default function GroupDetailScreen({ series, classes, subscriptions, stud
   const nowYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   const initialMonth = seriesMonths.includes(nowYM) ? nowYM : (seriesMonths[seriesMonths.length - 1] || nowYM)
   const [selectedMonth, setSelectedMonth] = useState(initialMonth)
+  const [showAddSheet, setShowAddSheet] = useState(false)
+  const [searchInput, setSearchInput] = useState('')
 
   const classesInMonth = seriesClasses.filter(c => c.date.startsWith(selectedMonth)).sort((a, b) => a.date.localeCompare(b.date))
   const subsInMonth = subscriptions.filter(s => s.seriesId === series.id && s.month === selectedMonth + '-01')
+  const subscribedStudentIds = new Set(subsInMonth.map(s => s.studentId))
+  const availableStudents = students.filter(s => !subscribedStudentIds.has(s.id) && s.name.toLowerCase().includes(searchInput.toLowerCase()))
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
@@ -100,11 +105,46 @@ export default function GroupDetailScreen({ series, classes, subscriptions, stud
               </div>
             )
           })}
-          <div className="arow" style={{ cursor: 'pointer' }} onClick={() => onAddSubscription(selectedMonth + '-01')}>
+          <div className="arow" style={{ cursor: 'pointer' }} onClick={() => setShowAddSheet(true)}>
             <div style={{ flex: 1, fontSize: 14, color: 'var(--olive)', fontWeight: 500 }}>+ Añadir suscripción</div>
           </div>
         </div>
       </div>
+
+      <Sheet open={showAddSheet} onClose={() => { setShowAddSheet(false); setSearchInput('') }} title="Añadir suscripción">
+        <input
+          className="field-input"
+          placeholder="Buscar alumna..."
+          value={searchInput}
+          onChange={e => setSearchInput(e.target.value)}
+        />
+        <div className="card" style={{ maxHeight: 300, overflowY: 'auto' }}>
+          {availableStudents.length === 0 && (
+            <div className="card-row"><span style={{ fontSize: 13, color: '#8a7a6a' }}>
+              {searchInput ? 'Sin resultados' : 'Todas las alumnas ya están suscritas'}
+            </span></div>
+          )}
+          {availableStudents.map(s => (
+            <div
+              key={s.id}
+              className="arow"
+              onClick={() => {
+                onAddSubscription(s.id, selectedMonth + '-01')
+                setShowAddSheet(false)
+                setSearchInput('')
+              }}
+            >
+              <div className="avatar" style={{ background: 'var(--green-light)', color: 'var(--olive-dark)' }}>
+                {getInitials(s.name)}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 500, color: '#2a2a2a' }}>{s.name}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <button className="btn-ghost" onClick={() => { setShowAddSheet(false); setSearchInput('') }}>Cancelar</button>
+      </Sheet>
     </div>
   )
 }

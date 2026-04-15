@@ -17,7 +17,8 @@ export function mapClass(c: any): Class {
     id: c.id, name: c.name, date: c.date, time: c.time,
     roomId: c.room_id || null, capacity: c.capacity,
     price: c.price ?? 20,
-    roomCost: c.room_cost, roomPaid: c.room_paid
+    roomCost: c.room_cost, roomPaid: c.room_paid,
+    seriesId: c.series_id ?? null,
   }
 }
 
@@ -71,15 +72,20 @@ function unwrap<T>(result: { data: T | null; error: any }): T {
 
 export async function loadData(): Promise<AppData> {
   const userId = await getUserId()
+  // Load subscriptions for last 6 months to support Finance month navigation
   const now = new Date()
-  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+  const monthsToLoad: string[] = []
+  for (let i = 0; i < 6; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    monthsToLoad.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`)
+  }
   const [rooms, students, classes, enrollments, classSeries, subscriptions] = await Promise.all([
     supabase.from('rooms').select('*').eq('user_id', userId).order('created_at'),
     supabase.from('students').select('*').eq('user_id', userId).order('name'),
     supabase.from('classes').select('*').eq('user_id', userId).order('date'),
     supabase.from('enrollments').select('*').eq('user_id', userId),
     supabase.from('class_series').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
-    supabase.from('subscriptions').select('*').eq('user_id', userId).eq('month', currentMonth),
+    supabase.from('subscriptions').select('*').eq('user_id', userId).in('month', monthsToLoad),
   ])
   return {
     rooms: (rooms.data || []).map(mapRoom),
@@ -137,6 +143,7 @@ export async function createClass(data: Omit<Class, 'id'>): Promise<Class> {
       room_id: data.roomId, capacity: data.capacity,
       price: data.price,
       room_cost: data.roomCost, room_paid: data.roomPaid,
+      series_id: data.seriesId ?? null,
       user_id: userId,
     }).select().single())
   return mapClass(row)
@@ -153,6 +160,7 @@ export async function updateClass(id: string, changes: Partial<Class>): Promise<
   if (changes.price !== undefined) update.price = changes.price
   if (changes.roomCost !== undefined) update.room_cost = changes.roomCost
   if (changes.roomPaid !== undefined) update.room_paid = changes.roomPaid
+  if (changes.seriesId !== undefined) update.series_id = changes.seriesId
   const row = unwrap(await supabase.from('classes')
     .update(update).eq('id', id).eq('user_id', userId).select().single())
   return mapClass(row)
@@ -180,6 +188,7 @@ export async function updateEnrollment(id: string, changes: Partial<Enrollment>)
   if (changes.status !== undefined) update.status = changes.status
   if (changes.deposit !== undefined) update.deposit = changes.deposit
   if (changes.total !== undefined) update.total = changes.total
+  if (changes.priceOverride !== undefined) update.price_override = changes.priceOverride
   const row = unwrap(await supabase.from('enrollments')
     .update(update).eq('id', id).eq('user_id', userId).select().single())
   return mapEnrollment(row)
@@ -210,6 +219,12 @@ export async function updateClassSeries(id: string, changes: Partial<Pick<ClassS
   const row = unwrap(await supabase.from('class_series')
     .update(update).eq('id', id).eq('user_id', userId).select().single())
   return mapClassSeries(row)
+}
+
+export async function deleteClassSeries(id: string): Promise<void> {
+  const userId = await getUserId()
+  const { error } = await supabase.from('class_series').delete().eq('id', id).eq('user_id', userId)
+  if (error) throw new Error(error.message)
 }
 
 // ── Subscriptions ──────────────────────────────────────────────────────────

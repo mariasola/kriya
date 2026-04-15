@@ -67,7 +67,7 @@ export default function StudentsScreen({ store, onOpenStudent }: Props) {
               const avatarStyle = isSuscrita
                 ? { background: '#c8d9a0', color: '#3d4a2e' }
                 : { background: '#e8e4f0', color: '#57467b' }
-              const sublabel = isSuscrita ? `${nClases} clases · suscrita este mes` : `${nClases} clases · puntual`
+              const sublabel = isSuscrita ? `${nClases} clases · suscrita` : `${nClases} clases · puntual`
               return (
                 <div key={s.id} className="arow" onClick={() => onOpenStudent(s.id)}>
                   <div className="avatar" style={avatarStyle}>{getInitials(s.name)}</div>

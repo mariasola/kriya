@@ -155,7 +155,7 @@ export default function FinanceScreen({ store, onOpenClass }: Props) {
                   const nClasesSerie = classesMes.filter(c => c.seriesId === seriesId).length
                   const total = subs.reduce((s, sub) => s + (sub.price ?? series?.monthlyPrice ?? 0), 0)
                   return (
-                    <div key={seriesId} className="card-row" style={{ cursor: 'pointer' }} onClick={() => {}}>
+                    <div key={seriesId} className="card-row">
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
                         <div style={{ width: 3, height: 32, background: 'var(--green-light)', borderRadius: 2, flexShrink: 0 }} />
                         <div>
@@ -163,10 +163,7 @@ export default function FinanceScreen({ store, onOpenClass }: Props) {
                           <div style={{ fontSize: 12, color: '#8a7a6a' }}>{subs.length} suscritas · {nClasesSerie} clases</div>
                         </div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <div style={{ fontSize: 15, fontWeight: 500, color: '#2a6640' }}>{formatEur(total)}</div>
-                        <span style={{ fontSize: 12, color: '#c8c0b0', marginLeft: 8 }}>›</span>
-                      </div>
+                      <div style={{ fontSize: 15, fontWeight: 500, color: '#2a6640' }}>{formatEur(total)}</div>
                     </div>
                   )
                 })}

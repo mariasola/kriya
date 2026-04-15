@@ -18,7 +18,7 @@ export default function HomeScreen({ store, onOpenClass, isActiveTab, onOpenGrou
   const { data, loading, addClass, addRoom } = store
   const today = new Date()
   const [showNew, setShowNew] = useState(false)
-  const [form, setForm] = useState({ name: '', date: toISO(today), time: '10:00', capacity: '8', price: '20', roomCost: '', roomId: '' })
+  const [form, setForm] = useState({ name: '', date: toISO(today), time: '10:00', capacity: '8', price: '20', roomCost: '', roomId: '', seriesId: '' })
   const [showInlineRoom, setShowInlineRoom] = useState(false)
   const [saving, setSaving] = useState(false)
 
@@ -49,9 +49,20 @@ export default function HomeScreen({ store, onOpenClass, isActiveTab, onOpenGrou
     if (saving) return
     setSaving(true)
     try {
-      await addClass({ name: form.name, date: form.date, time: form.time, roomId: form.roomId, capacity: parseInt(form.capacity) || 8, price: parseInt(form.price) || 20, roomCost: parseInt(form.roomCost) || 0, roomPaid: false })
+      const hasGroup = !!form.seriesId
+      await addClass({
+        name: form.name,
+        date: form.date,
+        time: form.time,
+        roomId: form.roomId,
+        capacity: parseInt(form.capacity) || 8,
+        price: hasGroup ? 0 : (parseInt(form.price) || 20),
+        roomCost: parseInt(form.roomCost) || 0,
+        roomPaid: false,
+        seriesId: hasGroup ? form.seriesId : null
+      })
       setShowNew(false)
-      setForm({ name: '', date: toISO(today), time: '10:00', capacity: '8', price: '20', roomCost: '', roomId: data.rooms[0]?.id || '' })
+      setForm({ name: '', date: toISO(today), time: '10:00', capacity: '8', price: '20', roomCost: '', roomId: data.rooms[0]?.id || '', seriesId: '' })
     } finally {
       setSaving(false)
     }
@@ -84,7 +95,7 @@ export default function HomeScreen({ store, onOpenClass, isActiveTab, onOpenGrou
                 const f = new Date(c.date + 'T12:00:00')
                 return (
                   <div key={c.id} style={{ display: 'flex', background: 'var(--white)', border: sameDay(f, today) ? '1px solid var(--olive-light)' : '.5px solid var(--border)', borderRadius: 14, overflow: 'hidden', marginBottom: 8, cursor: 'pointer', transition: 'transform .1s' }} onClick={() => onOpenClass(c.id)}>
-                    <div style={{ width: 3, flexShrink: 0, background: c.seriesId ? 'var(--green-light)' : 'transparent' }} />
+                    <div style={{ width: 3, flexShrink: 0, alignSelf: 'stretch', background: c.seriesId ? 'var(--green-light)' : 'transparent' }} />
                     <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10, padding: '.85rem 1rem' }}>
                       <div style={{ flex: 1 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
@@ -136,12 +147,7 @@ export default function HomeScreen({ store, onOpenClass, isActiveTab, onOpenGrou
         <div style={{ height: 12 }} />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           <div><label className="field-label">Capacidad</label><input className="field-input" type="number" value={form.capacity} onChange={e => setForm(f => ({ ...f, capacity: e.target.value }))} style={{ marginBottom: 0 }} /></div>
-          <div><label className="field-label">Precio clase (€)</label><input className="field-input" type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} style={{ marginBottom: 0 }} /></div>
-        </div>
-        <div style={{ height: 12 }} />
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           <div><label className="field-label">Coste sala (€)</label><input className="field-input" type="number" value={form.roomCost} onChange={e => setForm(f => ({ ...f, roomCost: e.target.value }))} style={{ marginBottom: 0 }} /></div>
-          <div />
         </div>
         <div style={{ height: 12 }} />
         <label className="field-label">Sala</label>
@@ -162,6 +168,30 @@ export default function HomeScreen({ store, onOpenClass, isActiveTab, onOpenGrou
             onSaved={room => { setForm(f => ({ ...f, roomId: room.id })); setShowInlineRoom(false) }}
             onCancel={() => setShowInlineRoom(false)}
           />
+        )}
+        {data.classSeries.length > 0 && (
+          <>
+            <div style={{ height: 12 }} />
+            <label className="field-label">Grupo (opcional)</label>
+            <select className="field-input" value={form.seriesId} onChange={e => setForm(f => ({ ...f, seriesId: e.target.value }))}>
+              <option value="">Sin grupo</option>
+              {data.classSeries.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          </>
+        )}
+        <div style={{ height: 12 }} />
+        {form.seriesId ? (
+          <>
+            <label className="field-label">Precio clase</label>
+            <div style={{ padding: '11px 14px', background: '#f5f0e8', borderRadius: 10, fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic', marginBottom: 12 }}>
+              El precio se calcula automáticamente desde el grupo
+            </div>
+          </>
+        ) : (
+          <>
+            <label className="field-label">Precio clase (€)</label>
+            <input className="field-input" type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} />
+          </>
         )}
         <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ opacity: saving ? 0.6 : 1 }}>{saving ? 'Guardando...' : 'Guardar clase'}</button>
         <button className="btn-ghost" onClick={() => setShowNew(false)}>Cancelar</button>

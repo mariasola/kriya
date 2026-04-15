@@ -7,18 +7,18 @@ import Sheet from './Sheet'
 import LoadingScreen from './ui/LoadingScreen'
 import InlineRoomForm from './ui/InlineRoomForm'
 
-interface Props { store: HomeScreenStore; onOpenClass: (id: string) => void; isActiveTab: boolean }
+interface Props { store: HomeScreenStore; onOpenClass: (id: string) => void; isActiveTab: boolean; onOpenGroups: () => void }
 
 function addDays(d: Date, n: number) { const r = new Date(d); r.setDate(r.getDate() + n); return r }
 function sameDay(a: Date, b: Date) { return a.toDateString() === b.toDateString() }
 function cap1(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }
 function toISO(d: Date) { return d.toISOString().split('T')[0] }
 
-export default function HomeScreen({ store, onOpenClass, isActiveTab }: Props) {
+export default function HomeScreen({ store, onOpenClass, isActiveTab, onOpenGroups }: Props) {
   const { data, loading, addClass, addRoom } = store
   const today = new Date()
   const [showNew, setShowNew] = useState(false)
-  const [form, setForm] = useState({ name: '', date: toISO(today), time: '10:00', capacity: '8', price: '20', roomCost: '', roomId: '' })
+  const [form, setForm] = useState({ name: '', date: toISO(today), time: '', capacity: '', price: '', roomCost: '', roomId: '', seriesId: '' })
   const [showInlineRoom, setShowInlineRoom] = useState(false)
   const [saving, setSaving] = useState(false)
 
@@ -49,9 +49,20 @@ export default function HomeScreen({ store, onOpenClass, isActiveTab }: Props) {
     if (saving) return
     setSaving(true)
     try {
-      await addClass({ name: form.name, date: form.date, time: form.time, roomId: form.roomId, capacity: parseInt(form.capacity) || 8, price: parseInt(form.price) || 20, roomCost: parseInt(form.roomCost) || 0, roomPaid: false })
+      const hasGroup = !!form.seriesId
+      await addClass({
+        name: form.name,
+        date: form.date,
+        time: form.time || '10:00',
+        roomId: form.roomId,
+        capacity: parseInt(form.capacity) || 8,
+        price: hasGroup ? 0 : (parseInt(form.price) || 20),
+        roomCost: parseInt(form.roomCost) || 0,
+        roomPaid: false,
+        seriesId: hasGroup ? form.seriesId : null
+      })
       setShowNew(false)
-      setForm({ name: '', date: toISO(today), time: '10:00', capacity: '8', price: '20', roomCost: '', roomId: data.rooms[0]?.id || '' })
+      setForm({ name: '', date: toISO(today), time: '', capacity: '', price: '', roomCost: '', roomId: data.rooms[0]?.id || '', seriesId: '' })
     } finally {
       setSaving(false)
     }
@@ -62,7 +73,10 @@ export default function HomeScreen({ store, onOpenClass, isActiveTab }: Props) {
       <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
         <div className="hdr">
           <div className="hdr-lbl">{cap1(today.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }))}</div>
-          <div className="hdr-title">Esta semana</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div className="hdr-title">Esta semana</div>
+            <button onClick={onOpenGroups} style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 20, padding: '4px 12px', fontSize: 9, color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", flexShrink: 0, marginBottom: '.9rem' }}>Grupos ›</button>
+          </div>
           <div className="metrics">
             <div className="metric"><div className="metric-val">{thisWeek.length}</div><div className="metric-lbl">clases</div></div>
             <div className="metric"><div className="metric-val green">{formatEur(cobrado)}</div><div className="metric-lbl">cobrado</div></div>
@@ -80,30 +94,40 @@ export default function HomeScreen({ store, onOpenClass, isActiveTab }: Props) {
                 const ins = data.enrollments.filter(i => i.classId === c.id)
                 const f = new Date(c.date + 'T12:00:00')
                 return (
-                  <div key={c.id} className={`ccard ${sameDay(f, today) ? 'today' : ''}`} onClick={() => onOpenClass(c.id)}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                        <span className="ccard-name">{c.name}</span>
-                        <span className="time-badge">{c.time}</span>
+                  <div key={c.id} style={{ display: 'flex', background: 'var(--white)', border: sameDay(f, today) ? '1px solid var(--olive-light)' : '.5px solid var(--border)', borderRadius: 14, overflow: 'hidden', marginBottom: 8, cursor: 'pointer', transition: 'transform .1s' }} onClick={() => onOpenClass(c.id)}>
+                    <div style={{ width: 3, flexShrink: 0, alignSelf: 'stretch', background: c.seriesId ? 'var(--green-light)' : 'transparent' }} />
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10, padding: '.85rem 1rem' }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                          <span className="ccard-name">{c.name}</span>
+                          <span className="time-badge">{c.time}</span>
+                        </div>
+                        <div className="ccard-sub">
+                          {room?.name}
+                          {c.roomPaid
+                            ? <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="#52582e" strokeWidth="1.2"/><path d="M4.5 7l1.8 1.8 3-3.6" stroke="#52582e" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            : <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="#b85c38" strokeWidth="1.2"/></svg>
+                          }
+                        </div>
                       </div>
-                      <div className="ccard-sub">
-                        {room?.name}
-                        {c.roomPaid ? <span className="dot-g" /> : <span className="dot-r" />}
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: 16, fontWeight: 500, color: '#2a2a2a' }}>{ins.length}/{c.capacity}</div>
+                        <div style={{ fontSize: 10, color: '#8a7a6a', marginTop: 2 }}>alumnas</div>
                       </div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: 16, fontWeight: 500, color: '#2a2a2a' }}>{ins.length}/{c.capacity}</div>
-                      <div style={{ fontSize: 10, color: '#8a7a6a', marginTop: 2 }}>alumnas</div>
                     </div>
                   </div>
                 )
               })}
             </div>
           ))}
-          <div className="legend">
-            <div className="legend-item"><span className="dot-g" />Sala pagada</div>
-            <div className="legend-item"><span className="dot-r" />Sin pagar</div>
-          </div>
+          {keys.length > 0 && (
+            <div className="legend">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <div style={{ width: 3, height: 12, background: 'var(--green-light)', borderRadius: 2 }} />
+                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Clase recurrente</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -118,17 +142,12 @@ export default function HomeScreen({ store, onOpenClass, isActiveTab }: Props) {
         <input className="field-input" placeholder="Ej. Hatha mañana" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           <div><label className="field-label">Fecha</label><input className="field-input" type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} style={{ marginBottom: 0 }} /></div>
-          <div><label className="field-label">Hora</label><input className="field-input" type="time" value={form.time} onChange={e => setForm(f => ({ ...f, time: e.target.value }))} style={{ marginBottom: 0 }} /></div>
+          <div><label className="field-label">Hora</label><input className="field-input" type="time" value={form.time} onChange={e => setForm(f => ({ ...f, time: e.target.value }))} placeholder="10:00" style={{ marginBottom: 0 }} /></div>
         </div>
         <div style={{ height: 12 }} />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-          <div><label className="field-label">Capacidad</label><input className="field-input" type="number" value={form.capacity} onChange={e => setForm(f => ({ ...f, capacity: e.target.value }))} style={{ marginBottom: 0 }} /></div>
-          <div><label className="field-label">Precio clase (€)</label><input className="field-input" type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} style={{ marginBottom: 0 }} /></div>
-        </div>
-        <div style={{ height: 12 }} />
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-          <div><label className="field-label">Coste sala (€)</label><input className="field-input" type="number" value={form.roomCost} onChange={e => setForm(f => ({ ...f, roomCost: e.target.value }))} style={{ marginBottom: 0 }} /></div>
-          <div />
+          <div><label className="field-label">Capacidad</label><input className="field-input" type="number" value={form.capacity} onChange={e => setForm(f => ({ ...f, capacity: e.target.value }))} placeholder="8" style={{ marginBottom: 0 }} /></div>
+          <div><label className="field-label">Coste sala (€)</label><input className="field-input" type="number" value={form.roomCost} onChange={e => setForm(f => ({ ...f, roomCost: e.target.value }))} placeholder="0" style={{ marginBottom: 0 }} /></div>
         </div>
         <div style={{ height: 12 }} />
         <label className="field-label">Sala</label>
@@ -149,6 +168,30 @@ export default function HomeScreen({ store, onOpenClass, isActiveTab }: Props) {
             onSaved={room => { setForm(f => ({ ...f, roomId: room.id })); setShowInlineRoom(false) }}
             onCancel={() => setShowInlineRoom(false)}
           />
+        )}
+        {data.classSeries.length > 0 && (
+          <>
+            <div style={{ height: 12 }} />
+            <label className="field-label">Grupo (opcional)</label>
+            <select className="field-input" value={form.seriesId} onChange={e => setForm(f => ({ ...f, seriesId: e.target.value }))} style={{ color: form.seriesId ? undefined : 'var(--text-muted)' }}>
+              <option value="" style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>Sin grupo</option>
+              {data.classSeries.map(s => <option key={s.id} value={s.id} style={{ color: 'var(--text)' }}>{s.name}</option>)}
+            </select>
+          </>
+        )}
+        <div style={{ height: 12 }} />
+        {form.seriesId ? (
+          <>
+            <label className="field-label">Precio clase</label>
+            <div style={{ padding: '11px 14px', background: '#f5f0e8', borderRadius: 10, fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic', marginBottom: 12 }}>
+              El precio se calcula automáticamente desde el grupo
+            </div>
+          </>
+        ) : (
+          <>
+            <label className="field-label">Precio clase (€)</label>
+            <input className="field-input" type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="20" />
+          </>
         )}
         <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ opacity: saving ? 0.6 : 1 }}>{saving ? 'Guardando...' : 'Guardar clase'}</button>
         <button className="btn-ghost" onClick={() => setShowNew(false)}>Cancelar</button>

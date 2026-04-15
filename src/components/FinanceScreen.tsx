@@ -1,7 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { FinanceScreenStore } from '@/hooks/useStore'
-import { getRevenue, getPending, formatEur } from '@/lib/calculations'
+import { getPending, formatEur } from '@/lib/calculations'
 import Sheet from './Sheet'
 import LoadingScreen from './ui/LoadingScreen'
 
@@ -28,7 +28,36 @@ export default function FinanceScreen({ store, onOpenClass }: Props) {
     return f.getMonth() === selMonth && f.getFullYear() === selYear
   })
 
-  const ingresos = classesMes.reduce((s, c) => s + getRevenue(c.price, data.enrollments.filter(e => e.classId === c.id)), 0)
+  const selMonthISO = `${selYear}-${String(selMonth + 1).padStart(2, '0')}-01`
+  const paidSubsMes = data.subscriptions.filter(s => s.month === selMonthISO && s.status === 'paid')
+  const subscriptionRevenue = paidSubsMes.reduce((sum, sub) => {
+    const series = data.classSeries.find(cs => cs.id === sub.seriesId)
+    return sum + (sub.price ?? series?.monthlyPrice ?? 0)
+  }, 0)
+  const subscribedBySeriesThisMonth = new Map<string, Set<string>>()
+  data.subscriptions.filter(s => s.month === selMonthISO).forEach(s => {
+    if (!subscribedBySeriesThisMonth.has(s.seriesId)) subscribedBySeriesThisMonth.set(s.seriesId, new Set())
+    subscribedBySeriesThisMonth.get(s.seriesId)!.add(s.studentId)
+  })
+  const sueltasRevenue = classesMes.reduce((sum, c) => {
+    const paid = data.enrollments.filter(e => e.classId === c.id && e.status === 'paid')
+    if (!c.seriesId) return sum + paid.reduce((s, e) => s + e.total, 0)
+    const subs = subscribedBySeriesThisMonth.get(c.seriesId) || new Set<string>()
+    return sum + paid.filter(e => !subs.has(e.studentId)).reduce((s, e) => s + e.total, 0)
+  }, 0)
+  const ingresos = subscriptionRevenue + sueltasRevenue
+  const subsBySeriesId: Record<string, typeof paidSubsMes> = {}
+  paidSubsMes.forEach(sub => {
+    if (!subsBySeriesId[sub.seriesId]) subsBySeriesId[sub.seriesId] = []
+    subsBySeriesId[sub.seriesId].push(sub)
+  })
+  const classesSueltas = classesMes.filter(c => {
+    const paid = data.enrollments.filter(e => e.classId === c.id && e.status === 'paid')
+    if (paid.length === 0) return false
+    if (!c.seriesId) return true
+    const subs = subscribedBySeriesThisMonth.get(c.seriesId) || new Set<string>()
+    return paid.some(e => !subs.has(e.studentId))
+  })
   const gastos = classesMes.reduce((s, c) => s + (data.rooms.some(r => r.id === c.roomId) ? c.roomCost : 0), 0)
   const balance = ingresos - gastos
   const pendiente = classesMes.reduce((s, c) => s + getPending(c.price, data.enrollments.filter(e => e.classId === c.id)), 0)
@@ -117,35 +146,63 @@ export default function FinanceScreen({ store, onOpenClass }: Props) {
             </>
           )}
 
-          {classesMes.length > 0 ? (
+          {Object.keys(subsBySeriesId).length > 0 && (
             <>
-              <div className="dlbl" style={{ margin: '0 2px 8px' }}>Clases del mes</div>
+              <div className="dlbl" style={{ margin: '0 2px 8px' }}>Suscripciones</div>
               <div className="card">
-                {classesMes.map(c => {
-                  const co = getRevenue(c.price, data.enrollments.filter(e => e.classId === c.id))
-                  const pe = getPending(c.price, data.enrollments.filter(e => e.classId === c.id))
-                  const nIns = data.enrollments.filter(e => e.classId === c.id).length
+                {Object.entries(subsBySeriesId).map(([seriesId, subs]) => {
+                  const series = data.classSeries.find(cs => cs.id === seriesId)
+                  const nClasesSerie = classesMes.filter(c => c.seriesId === seriesId).length
+                  const total = subs.reduce((s, sub) => s + (sub.price ?? series?.monthlyPrice ?? 0), 0)
                   return (
-                    <div key={c.id} className="card-row" onClick={() => onOpenClass(c.id)} style={{ cursor: 'pointer' }}>
-                      <div>
-                        <div style={{ fontSize: 14, fontWeight: 500, color: '#2a2a2a' }}>{c.name}</div>
-                        <div style={{ fontSize: 12, color: '#8a7a6a' }}>{new Date(c.date + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} · {nIns} alumnas</div>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <div style={{ textAlign: 'right' }}>
-                          {co > 0 && <div style={{ fontSize: 14, fontWeight: 500, color: '#2a6640' }}>{formatEur(co)} cobrado</div>}
-                          {pe > 0 && <div style={{ fontSize: 13, color: '#8a5a10', marginTop: 2 }}>{formatEur(pe)} pendiente</div>}
-                          {co === 0 && pe === 0 && <div style={{ fontSize: 13, color: '#aaa' }}>Sin ingresos</div>}
+                    <div key={seriesId} style={{ display: 'flex', borderBottom: '.5px solid var(--cream-dark)' }}>
+                      <div style={{ width: 3, flexShrink: 0, background: 'var(--green-light)', borderRadius: '2px 0 0 2px' }} />
+                      <div style={{ flex: 1, padding: '.85rem 1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 500, color: '#2a2a2a' }}>{series?.name || '—'}</div>
+                          <div style={{ fontSize: 12, color: '#8a7a6a' }}>{subs.length} suscritas · {nClasesSerie} clases</div>
                         </div>
-                        <span style={{ fontSize: 12, color: '#c8c0b0', marginLeft: 8 }}>›</span>
+                        <div style={{ fontSize: 15, fontWeight: 500, color: '#2a6640' }}>{formatEur(total)}</div>
                       </div>
                     </div>
                   )
                 })}
               </div>
             </>
-          ) : (
-            <div className="empty">Sin clases este mes</div>
+          )}
+
+          {classesSueltas.length > 0 && (
+            <>
+              <div className="dlbl" style={{ margin: '0 2px 8px' }}>Clases sueltas</div>
+              <div className="card">
+                {classesSueltas.map(c => {
+                  const paid = data.enrollments.filter(e => e.classId === c.id && e.status === 'paid')
+                  const subs = c.seriesId ? (subscribedBySeriesThisMonth.get(c.seriesId) || new Set<string>()) : new Set<string>()
+                  const sueltaPaid = c.seriesId ? paid.filter(e => !subs.has(e.studentId)) : paid
+                  const co = sueltaPaid.reduce((s, e) => s + e.total, 0)
+                  const nIns = data.enrollments.filter(e => e.classId === c.id).length
+                  return (
+                    <div key={c.id} style={{ display: 'flex', borderBottom: '.5px solid var(--cream-dark)', cursor: 'pointer' }} onClick={() => onOpenClass(c.id)}>
+                      <div style={{ width: 3, flexShrink: 0, background: '#e8e4f0', borderRadius: '2px 0 0 2px' }} />
+                      <div style={{ flex: 1, padding: '.85rem 1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 500, color: '#2a2a2a' }}>{c.name}</div>
+                          <div style={{ fontSize: 12, color: '#8a7a6a' }}>{new Date(c.date + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} · {nIns} alumnas</div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <div style={{ fontSize: 15, fontWeight: 500, color: '#2a6640' }}>{formatEur(co)}</div>
+                          <span style={{ fontSize: 12, color: '#c8c0b0', marginLeft: 8 }}>›</span>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </>
+          )}
+
+          {Object.keys(subsBySeriesId).length === 0 && classesSueltas.length === 0 && (
+            <div className="empty">Sin ingresos este mes</div>
           )}
         </div>
       </div>

@@ -16,6 +16,7 @@ export interface Class {
   price: number
   roomCost: number
   roomPaid: boolean
+  seriesId?: string | null
 }
 
 export interface Student {
@@ -32,11 +33,36 @@ export interface Enrollment {
   status: EnrollmentStatus
   deposit: number
   total: number
+  priceOverride?: number | null
 }
+
+export interface ClassSeries {
+  id: string
+  name: string
+  description?: string
+  monthlyPrice: number
+  userId: string
+  createdAt: string
+}
+
+export interface Subscription {
+  id: string
+  studentId: string
+  seriesId: string
+  month: string // fecha ISO, siempre primer día del mes (ej: "2026-04-01")
+  price: number | null // null = usa monthlyPrice de la serie
+  status: 'pending' | 'paid'
+  userId: string
+  createdAt: string
+}
+
+export type SubscriptionStatus = 'pending' | 'paid'
 
 export interface AppData {
   rooms: Room[]
   students: Student[]
   classes: Class[]
   enrollments: Enrollment[]
+  classSeries: ClassSeries[]
+  subscriptions: Subscription[]
 }

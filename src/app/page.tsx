@@ -9,11 +9,15 @@ import ClassScreen from '@/components/ClassScreen'
 import StudentsScreen from '@/components/StudentsScreen'
 import StudentDetail from '@/components/StudentDetail'
 import FinanceScreen from '@/components/FinanceScreen'
+import GroupsScreen from '@/components/GroupsScreen'
+import GroupDetailScreen from '@/components/GroupDetailScreen'
+import GroupFormScreen from '@/components/GroupFormScreen'
 import BottomNav from '@/components/BottomNav'
 import type { Session } from '@supabase/supabase-js'
+import type { ClassSeries } from '@/lib/types'
 
 export type Tab = 'home' | 'students' | 'finance'
-export type Screen = Tab | 'class' | 'student-detail'
+export type Screen = Tab | 'class' | 'student-detail' | 'groups' | 'groupDetail' | 'groupForm'
 
 function AuthenticatedApp() {
   const store = useStore()
@@ -22,6 +26,7 @@ function AuthenticatedApp() {
   const [screenStack, setScreenStack] = useState<Screen[]>([])
   const [currentClassId, setCurrentClassId] = useState<string | null>(null)
   const [currentStudentId, setCurrentStudentId] = useState<string | null>(null)
+  const [selectedSeries, setSelectedSeries] = useState<ClassSeries | null>(null)
 
   function navigate(t: Tab) {
     setTab(t); setScreen(t); setScreenStack([])
@@ -44,11 +49,50 @@ function AuthenticatedApp() {
           <button onClick={store.dismissError} style={{ background: 'none', border: 'none', color: '#fff', fontSize: 18, cursor: 'pointer', lineHeight: 1, padding: '0 0 0 12px' }}>×</button>
         </div>
       )}
-      {screen === 'home' && <HomeScreen store={store} onOpenClass={openClass} isActiveTab={tab === 'home'} />}
+      {screen === 'home' && <HomeScreen store={store} onOpenClass={openClass} isActiveTab={tab === 'home'} onOpenGroups={() => pushScreen('groups')} />}
       {screen === 'class' && currentClassId && <ClassScreen store={store} classId={currentClassId} onBack={goBack} />}
       {screen === 'students' && <StudentsScreen store={store} onOpenStudent={openStudent} />}
       {screen === 'student-detail' && currentStudentId && <StudentDetail store={store} studentId={currentStudentId} onBack={goBack} />}
       {screen === 'finance' && <FinanceScreen store={store} onOpenClass={openClass} />}
+      {screen === 'groups' && (
+        <GroupsScreen
+          classSeries={store.data.classSeries}
+          subscriptions={store.data.subscriptions}
+          classes={store.data.classes}
+          onBack={goBack}
+          onSelectSeries={s => { setSelectedSeries(s); pushScreen('groupDetail') }}
+          onNewSeries={() => { setSelectedSeries(null); pushScreen('groupForm') }}
+        />
+      )}
+      {screen === 'groupDetail' && selectedSeries && (
+        <GroupDetailScreen
+          series={store.data.classSeries.find(s => s.id === selectedSeries.id) || selectedSeries}
+          classes={store.data.classes}
+          subscriptions={store.data.subscriptions}
+          students={store.data.students}
+          onBack={goBack}
+          onEdit={() => pushScreen('groupForm')}
+          onSelectClass={openClass}
+          onToggleSubscriptionStatus={store.toggleSubscriptionStatus}
+          onAddSubscription={(studentId, month) => store.addSubscription({ studentId, seriesId: selectedSeries.id, month, price: null, status: 'pending' })}
+        />
+      )}
+      {screen === 'groupForm' && (
+        <GroupFormScreen
+          series={selectedSeries ?? undefined}
+          onBack={goBack}
+          onSave={async d => {
+            if (selectedSeries) await store.updateClassSeries(selectedSeries.id, d)
+            else await store.addClassSeries(d)
+          }}
+          onDelete={selectedSeries ? async () => {
+            await store.deleteClassSeries(selectedSeries.id)
+            setSelectedSeries(null)
+            goBack()
+            goBack() // Go back twice: form → detail → groups list
+          } : undefined}
+        />
+      )}
       <BottomNav activeTab={tab} onNavigate={navigate} onSignOut={() => supabase.auth.signOut()} />
     </div>
   )

@@ -90,7 +90,7 @@ sum(cobrado de todas las clases del mes)
 1. Home → ver clase del día
 2. Tap en clase → ver lista de alumnas y su estado
 3. Tap en alumna → cambiar estado (registered → paid, etc.)
-4. Tap en toggle de sala → marcar sala como pagada
+4. Tap en checkbox de sala → marcar sala como pagada
 
 ### Añadir nueva alumna a una clase
 1. Detalle de clase → "+ Añadir alumna"

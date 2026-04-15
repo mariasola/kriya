@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { AppData, Student, Class, Room, EnrollmentStatus } from '@/lib/types'
+import { AppData, Student, Class, Room, EnrollmentStatus, ClassSeries, Subscription, SubscriptionStatus } from '@/lib/types'
 import {
   loadData, createRoom, updateRoom, createStudent, updateStudent,
   createClass, updateClass, deleteClass, createEnrollment, updateEnrollment,
+  createClassSeries, updateClassSeries, deleteClassSeries, createSubscription, updateSubscriptionStatus,
 } from '@/lib/data'
 import { computeEnrollmentChanges } from '@/lib/calculations'
 
@@ -49,7 +50,7 @@ export interface FinanceScreenStore {
 // ── Hook ────────────────────────────────────────────────────────────────────
 
 export function useStore() {
-  const [data, setData] = useState<AppData>({ rooms: [], students: [], classes: [], enrollments: [] })
+  const [data, setData] = useState<AppData>({ rooms: [], students: [], classes: [], enrollments: [], classSeries: [], subscriptions: [] })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const hasLoaded = useRef(false)
@@ -162,6 +163,71 @@ export function useStore() {
     }
   }
 
+  const addClassSeries = async (series: Omit<ClassSeries, 'id' | 'userId' | 'createdAt'>) => {
+    try {
+      const s = await createClassSeries(series)
+      await reload()
+      return s
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al guardar serie')
+      throw e
+    }
+  }
+
+  const updateClassSeriesItem = async (id: string, changes: Partial<Pick<ClassSeries, 'name' | 'description' | 'monthlyPrice'>>) => {
+    try {
+      await updateClassSeries(id, changes)
+      await reload()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al actualizar serie')
+      throw e
+    }
+  }
+
+  const deleteClassSeriesItem = async (id: string) => {
+    try {
+      await deleteClassSeries(id)
+      await reload()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al eliminar serie')
+      throw e
+    }
+  }
+
+  const addSubscription = async (sub: Omit<Subscription, 'id' | 'userId' | 'createdAt'>) => {
+    try {
+      const s = await createSubscription(sub)
+      await reload()
+      return s
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al guardar suscripción')
+      throw e
+    }
+  }
+
+  const setSubscriptionStatus = async (id: string, status: SubscriptionStatus) => {
+    try {
+      await updateSubscriptionStatus(id, status)
+      await reload()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al actualizar suscripción')
+      throw e
+    }
+  }
+
+  const toggleSubscriptionStatus = async (subscriptionId: string) => {
+    const sub = data.subscriptions.find(s => s.id === subscriptionId)
+    if (!sub) return
+    const newStatus: SubscriptionStatus = sub.status === 'paid' ? 'pending' : 'paid'
+    try {
+      await updateSubscriptionStatus(subscriptionId, newStatus)
+      await reload()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al actualizar suscripción')
+      throw e
+    }
+  }
+
   const dismissError = () => setError(null)
 
   return {
@@ -170,5 +236,7 @@ export function useStore() {
     addClass, updateClass: updateClassItem, deleteClass: deleteClassItem,
     addStudent, updateStudent: updateStudentItem,
     addEnrollment, setEnrollmentStatus,
+    addClassSeries, updateClassSeries: updateClassSeriesItem, deleteClassSeries: deleteClassSeriesItem,
+    addSubscription, setSubscriptionStatus, toggleSubscriptionStatus,
   }
 }

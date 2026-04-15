@@ -153,9 +153,16 @@ html, body {
 /* ── Form inputs ── */
 .field-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; display: block; margin-bottom: 5px; }
 .field-input { width: 100%; padding: 11px 14px; border: .5px solid #d8d0c0; border-radius: 10px; font-size: 14px; font-family: 'DM Sans', sans-serif; background: #ffffff; color: #2a2a2a; -webkit-text-fill-color: #2a2a2a; outline: none; margin-bottom: 12px; }
-.field-input::placeholder { color: #b0a898; }
+.field-input::placeholder { color: #c0b8a8; font-style: italic; opacity: 0.7; }
 textarea.field-input { resize: none; line-height: 1.5; }
 select.field-input { appearance: none; }
+
+/* ── Custom checkbox ── */
+.cb-box { width: 22px; height: 22px; border-radius: 5px; border: 2px solid var(--border); background: var(--white); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: background .15s, border-color .15s; }
+.cb-box.checked { background: var(--olive); border-color: var(--olive); }
+.cb-box.checked::after { content: '✓'; color: white; font-size: 13px; line-height: 1; }
+.cb-label { font-size: 13px; color: var(--text); transition: color .15s; cursor: pointer; }
+.cb-label.checked { color: var(--olive); font-weight: 500; }
 
 /* ── Misc ── */
 .sala-ic { background: var(--white); border: .5px solid var(--border); border-radius: 14px; padding: .9rem 1.1rem; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
@@ -163,7 +170,7 @@ select.field-input { appearance: none; }
 .pend-row { padding: .75rem 1rem; border-bottom: .5px solid var(--cream-dark); display: flex; justify-content: space-between; align-items: center; }
 .pend-row:last-child { border-bottom: none; }
 .back-btn { background: none; border: none; color: #a8b89a; font-size: 13px; cursor: pointer; font-family: 'DM Sans', sans-serif; padding: 0; margin-bottom: 8px; }
-.finance-card { background: var(--cream-dark); border-radius: 16px; padding: 1.25rem; margin-bottom: 10px; border: .5px solid #e0d8c8; }
+.finance-card { background: var(--white); border-radius: 16px; padding: 1.25rem; margin-bottom: 10px; border: 1px solid var(--border); }
 .finance-bal { font-family: 'DM Sans', sans-serif; font-size: 36px; font-weight: 500; color: var(--olive); margin: 6px 0 14px; }
 .month-pills { display: flex; gap: 6px; margin-top: 10px; overflow-x: auto; }
 .month-pills::-webkit-scrollbar { display: none; }

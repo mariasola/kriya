@@ -8,8 +8,7 @@ export default function Sheet({ open, onClose, title, children }: Props) {
   return (
     <div className="sheet-overlay open" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div className="sheet">
-        <div className="sheet-handle" />
-        <div className="sheet-title">{title}</div>
+<div className="sheet-title">{title}</div>
         {children}
       </div>
     </div>

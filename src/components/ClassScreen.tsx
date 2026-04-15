@@ -2,11 +2,39 @@
 import { useState } from 'react'
 import { ClassScreenStore } from '@/hooks/useStore'
 import { getRevenue, getPending, getInitials, formatEur } from '@/lib/calculations'
-import { EnrollmentStatus } from '@/lib/types'
+import { EnrollmentStatus, Enrollment, Subscription, Class } from '@/lib/types'
 import Sheet from './Sheet'
 import LoadingScreen from './ui/LoadingScreen'
 import StatusBadge from './ui/StatusBadge'
 import InlineRoomForm from './ui/InlineRoomForm'
+
+function classifyEnrollments(
+  enrollments: Enrollment[],
+  subscriptions: Subscription[],
+  allEnrollments: Enrollment[],
+  allClasses: Class[],
+  classSeriesId: string,
+  classDate: string,
+  classMonth: string
+): { subscribed: Enrollment[]; occasional: Enrollment[]; newStudents: Enrollment[] } {
+  const priorSeriesClassIds = new Set(
+    allClasses.filter(c => c.seriesId === classSeriesId && c.date < classDate).map(c => c.id)
+  )
+  const subscribed: Enrollment[] = []
+  const occasional: Enrollment[] = []
+  const newStudents: Enrollment[] = []
+  for (const e of enrollments) {
+    const hasSub = subscriptions.some(s => s.studentId === e.studentId && s.seriesId === classSeriesId && s.month === classMonth)
+    if (hasSub) {
+      subscribed.push(e)
+    } else {
+      const hasPrior = allEnrollments.some(ae => ae.studentId === e.studentId && priorSeriesClassIds.has(ae.classId))
+      if (hasPrior) occasional.push(e)
+      else newStudents.push(e)
+    }
+  }
+  return { subscribed, occasional, newStudents }
+}
 
 interface Props { store: ClassScreenStore; classId: string; onBack: () => void }
 
@@ -31,7 +59,7 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [addInput, setAddInput] = useState('')
   const [selStudent, setSelStudent] = useState<string | null>(null)
-  const [editForm, setEditForm] = useState({ name: cls?.name || '', date: cls?.date || '', time: cls?.time || '', capacity: String(cls?.capacity || 8), price: String(cls?.price || 20), roomCost: String(cls?.roomCost || 0), roomId: cls?.roomId || '' })
+  const [editForm, setEditForm] = useState({ name: cls?.name || '', date: cls?.date || '', time: cls?.time || '', capacity: String(cls?.capacity || 8), price: String(cls?.price || 20), roomCost: String(cls?.roomCost || 0), roomId: cls?.roomId || '', seriesId: cls?.seriesId || '' })
   const [showInlineRoom, setShowInlineRoom] = useState(false)
   const [savingEdit, setSavingEdit] = useState(false)
   const [savingAdd, setSavingAdd] = useState(false)
@@ -45,7 +73,17 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
     if (savingEdit) return
     setSavingEdit(true)
     try {
-      await updateClass(classId, { name: editForm.name, date: editForm.date, time: editForm.time, capacity: parseInt(editForm.capacity) || 8, price: parseInt(editForm.price) || 20, roomCost: parseInt(editForm.roomCost) || 0, roomId: editForm.roomId || null })
+      const hasGroup = !!editForm.seriesId
+      await updateClass(classId, {
+        name: editForm.name,
+        date: editForm.date,
+        time: editForm.time,
+        capacity: parseInt(editForm.capacity) || 8,
+        price: hasGroup ? 0 : (parseInt(editForm.price) || 20),
+        roomCost: parseInt(editForm.roomCost) || 0,
+        roomId: editForm.roomId || null,
+        seriesId: hasGroup ? editForm.seriesId : null
+      })
       setEditSheet(false)
     } finally {
       setSavingEdit(false)
@@ -76,6 +114,12 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
   const curEnrollment = statusSheet ? data.enrollments.find(e => e.id === statusSheet) : null
   const curStudent = curEnrollment ? data.students.find(s => s.id === curEnrollment.studentId) : null
 
+  const classMonth = cls.date.slice(0, 7) + '-01'
+  const hasSeries = !!cls.seriesId
+  const { subscribed, occasional, newStudents } = hasSeries
+    ? classifyEnrollments(ins, data.subscriptions, data.enrollments, data.classes, cls.seriesId!, cls.date, classMonth)
+    : { subscribed: [], occasional: [], newStudents: [] }
+
   // Sub-pantalla sin tab propio → header crema. Regla: verde (--olive) = pantalla principal con tab; crema (--cream) = subpantalla sin tab.
   return (
     <>
@@ -85,7 +129,7 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
           <div style={{ position: 'relative' }}>
             <div className="hdr-lbl">{new Date(cls.date + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })} · {cls.time}</div>
             <div className="hdr-title">{cls.name}{room && <small>{room.name} · {room.address}</small>}</div>
-            <button className="edit-btn" onClick={() => { setEditForm({ name: cls.name, date: cls.date, time: cls.time, capacity: String(cls.capacity), price: String(cls.price), roomCost: String(cls.roomCost), roomId: cls.roomId || '' }); setShowInlineRoom(false); setEditSheet(true) }}>
+            <button className="edit-btn" onClick={() => { setEditForm({ name: cls.name, date: cls.date, time: cls.time, capacity: String(cls.capacity), price: String(cls.price), roomCost: String(cls.roomCost), roomId: cls.roomId || '', seriesId: cls.seriesId || '' }); setShowInlineRoom(false); setEditSheet(true) }}>
               <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </button>
           </div>
@@ -107,34 +151,121 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
           </div>
           <div className="sala-ic">
             <div><div className="card-row-lbl">Alquiler sala</div><div className="card-row-val">{formatEur(cls.roomCost)}</div></div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 13, color: '#5a4a3a' }}>Sala pagada</span>
-              <button
-                onClick={() => updateClass(classId, { roomPaid: !cls.roomPaid })}
-                style={{ width: 44, height: 26, borderRadius: 13, border: 'none', cursor: 'pointer', background: cls.roomPaid ? '#4a8a5a' : '#d0c8b8', position: 'relative', transition: 'background .2s', flexShrink: 0, padding: 0 }}
-              >
-                <span style={{ position: 'absolute', top: 3, left: cls.roomPaid ? 21 : 3, width: 20, height: 20, borderRadius: '50%', background: '#fff', transition: 'left .2s', display: 'block', boxShadow: '0 1px 3px rgba(0,0,0,.2)' }} />
-              </button>
-            </div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={cls.roomPaid}
+                onChange={() => updateClass(classId, { roomPaid: !cls.roomPaid })}
+                style={{ position: 'absolute', opacity: 0, width: 0, height: 0 }}
+              />
+              <span className={`cb-label${cls.roomPaid ? ' checked' : ''}`}>Sala pagada</span>
+              <span className={`cb-box${cls.roomPaid ? ' checked' : ''}`} aria-hidden="true" />
+            </label>
           </div>
           <div className="dlbl" style={{ marginBottom: 8 }}>Alumnas</div>
-          <div className="card">
-            {ins.length === 0 && <div className="card-row"><span style={{ fontSize: 13, color: '#8a7a6a' }}>Sin alumnas apuntadas aún</span></div>}
-            {ins.map(e => {
-              const s = data.students.find(x => x.id === e.studentId)
-              if (!s) return null
-              return (
-                <div key={e.id} className="arow" onClick={() => setStatusSheet(e.id)}>
-                  <div className="avatar">{getInitials(s.name)}</div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 14, fontWeight: 500, color: '#2a2a2a' }}>{s.name}</div>
-                    <div style={{ fontSize: 12, color: '#8a7a6a', marginTop: 2 }}>{s.phone || '—'}</div>
+          {ins.length === 0 && (
+            <div className="card">
+              <div className="card-row"><span style={{ fontSize: 13, color: '#8a7a6a' }}>Sin alumnas apuntadas aún</span></div>
+            </div>
+          )}
+          {ins.length > 0 && !hasSeries && (
+            <div className="card">
+              {ins.map(e => {
+                const s = data.students.find(x => x.id === e.studentId)
+                if (!s) return null
+                return (
+                  <div key={e.id} className="arow" onClick={() => setStatusSheet(e.id)}>
+                    <div className="avatar">{getInitials(s.name)}</div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 14, fontWeight: 500, color: '#2a2a2a' }}>{s.name}</div>
+                      <div style={{ fontSize: 12, color: '#8a7a6a', marginTop: 2 }}>{s.phone || '—'}</div>
+                    </div>
+                    <StatusBadge status={e.status} deposit={e.deposit} />
                   </div>
-                  <StatusBadge status={e.status} deposit={e.deposit} />
+                )
+              })}
+            </div>
+          )}
+          {ins.length > 0 && hasSeries && (
+            <>
+              {subscribed.length > 0 && (
+                <div style={{ marginBottom: 10 }}>
+                  <div style={{ fontSize: 9, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4, marginLeft: 2 }}>Suscritas</div>
+                  <div className="card">
+                    {subscribed.map(e => {
+                      const s = data.students.find(x => x.id === e.studentId)
+                      if (!s) return null
+                      const sub = data.subscriptions.find(sb => sb.studentId === e.studentId && sb.seriesId === cls.seriesId! && sb.month === classMonth)
+                      const isPaid = sub?.status === 'paid'
+                      return (
+                        <div key={e.id} className="arow" onClick={() => setStatusSheet(e.id)}>
+                          <div className="avatar" style={{ background: '#c8d9a0', color: '#3d4a2e' }}>{getInitials(s.name)}</div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 14, fontWeight: 500, color: '#2a2a2a' }}>{s.name}</div>
+                            <div style={{ fontSize: 12, color: '#8a7a6a', marginTop: 2 }}>{s.phone || '—'}</div>
+                          </div>
+                          {isPaid
+                            ? <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="#52582e" strokeWidth="1.2"/><path d="M4.5 7l1.8 1.8 3-3.6" stroke="#52582e" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            : <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="#b85c38" strokeWidth="1.2"/></svg>
+                          }
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
-              )
-            })}
-          </div>
+              )}
+              {occasional.length > 0 && (
+                <div style={{ marginBottom: 10 }}>
+                  <div style={{ fontSize: 9, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4, marginLeft: 2 }}>Puntuales</div>
+                  <div className="card">
+                    {occasional.map(e => {
+                      const s = data.students.find(x => x.id === e.studentId)
+                      if (!s) return null
+                      const isPaid = e.status === 'paid'
+                      return (
+                        <div key={e.id} className="arow" onClick={() => setStatusSheet(e.id)}>
+                          <div className="avatar" style={{ background: '#e8e4f0', color: '#57467b' }}>{getInitials(s.name)}</div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 14, fontWeight: 500, color: '#2a2a2a' }}>{s.name}</div>
+                            <div style={{ fontSize: 12, color: '#8a7a6a', marginTop: 2 }}>{s.phone || '—'}</div>
+                          </div>
+                          {isPaid
+                            ? <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="#52582e" strokeWidth="1.2"/><path d="M4.5 7l1.8 1.8 3-3.6" stroke="#52582e" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            : <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="#b85c38" strokeWidth="1.2"/></svg>
+                          }
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+              {newStudents.length > 0 && (
+                <div style={{ marginBottom: 10 }}>
+                  <div style={{ fontSize: 9, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 4, marginLeft: 2 }}>Nuevas</div>
+                  <div className="card">
+                    {newStudents.map(e => {
+                      const s = data.students.find(x => x.id === e.studentId)
+                      if (!s) return null
+                      const isPaid = e.status === 'paid'
+                      return (
+                        <div key={e.id} className="arow" onClick={() => setStatusSheet(e.id)}>
+                          <div className="avatar" style={{ background: '#dde6ee', color: '#355070' }}>{getInitials(s.name)}</div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 14, fontWeight: 500, color: '#2a2a2a' }}>{s.name}</div>
+                            <div style={{ fontSize: 12, color: '#8a7a6a', marginTop: 2 }}>{s.phone || '—'}</div>
+                          </div>
+                          {isPaid
+                            ? <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="#52582e" strokeWidth="1.2"/><path d="M4.5 7l1.8 1.8 3-3.6" stroke="#52582e" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            : <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="#b85c38" strokeWidth="1.2"/></svg>
+                          }
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
           <button className="btn-secondary" onClick={() => setAddSheet(true)}>+ Añadir alumna</button>
         </div>
       </div>
@@ -149,20 +280,15 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
         <div style={{ height: 12 }} />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           <div><label className="field-label">Capacidad</label><input className="field-input" type="number" value={editForm.capacity} onChange={e => setEditForm(f => ({ ...f, capacity: e.target.value }))} style={{ marginBottom: 0 }} /></div>
-          <div><label className="field-label">Precio clase (€)</label><input className="field-input" type="number" value={editForm.price} onChange={e => setEditForm(f => ({ ...f, price: e.target.value }))} style={{ marginBottom: 0 }} /></div>
-        </div>
-        <div style={{ height: 12 }} />
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           <div><label className="field-label">Coste sala (€)</label><input className="field-input" type="number" value={editForm.roomCost} onChange={e => setEditForm(f => ({ ...f, roomCost: e.target.value }))} style={{ marginBottom: 0 }} /></div>
-          <div />
         </div>
         <div style={{ height: 12 }} />
         <label className="field-label">Sala</label>
         {data.rooms.length > 0 && !showInlineRoom && (
           <>
-            <select className="field-input" value={editForm.roomId} onChange={e => setEditForm(f => ({ ...f, roomId: e.target.value }))}>
-              <option value="">Sin sala</option>
-              {data.rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+            <select className="field-input" value={editForm.roomId} onChange={e => setEditForm(f => ({ ...f, roomId: e.target.value }))} style={{ color: editForm.roomId ? undefined : 'var(--text-muted)' }}>
+              <option value="" style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>Sin sala</option>
+              {data.rooms.map(r => <option key={r.id} value={r.id} style={{ color: 'var(--text)' }}>{r.name}</option>)}
             </select>
             <span onClick={() => setShowInlineRoom(true)} style={{ display: 'inline-block', marginTop: 6, marginBottom: 4, fontSize: 13, color: '#3d4a2e', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
               + Añadir sala
@@ -176,6 +302,30 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
             onSaved={room => { setEditForm(f => ({ ...f, roomId: room.id })); setShowInlineRoom(false) }}
             onCancel={() => setShowInlineRoom(false)}
           />
+        )}
+        {data.classSeries.length > 0 && (
+          <>
+            <div style={{ height: 12 }} />
+            <label className="field-label">Grupo (opcional)</label>
+            <select className="field-input" value={editForm.seriesId} onChange={e => setEditForm(f => ({ ...f, seriesId: e.target.value }))} style={{ color: editForm.seriesId ? undefined : 'var(--text-muted)' }}>
+              <option value="" style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>Sin grupo</option>
+              {data.classSeries.map(s => <option key={s.id} value={s.id} style={{ color: 'var(--text)' }}>{s.name}</option>)}
+            </select>
+          </>
+        )}
+        <div style={{ height: 12 }} />
+        {editForm.seriesId ? (
+          <>
+            <label className="field-label">Precio clase</label>
+            <div style={{ padding: '11px 14px', background: '#f5f0e8', borderRadius: 10, fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic', marginBottom: 12 }}>
+              El precio se calcula automáticamente desde el grupo
+            </div>
+          </>
+        ) : (
+          <>
+            <label className="field-label">Precio clase (€)</label>
+            <input className="field-input" type="number" value={editForm.price} onChange={e => setEditForm(f => ({ ...f, price: e.target.value }))} />
+          </>
         )}
         <button className="btn-primary" onClick={handleSaveEdit} disabled={savingEdit} style={{ opacity: savingEdit ? 0.6 : 1 }}>{savingEdit ? 'Guardando...' : 'Guardar'}</button>
         <button className="btn-ghost" onClick={() => setEditSheet(false)}>Cancelar</button>

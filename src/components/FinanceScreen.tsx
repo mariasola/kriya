@@ -155,15 +155,15 @@ export default function FinanceScreen({ store, onOpenClass }: Props) {
                   const nClasesSerie = classesMes.filter(c => c.seriesId === seriesId).length
                   const total = subs.reduce((s, sub) => s + (sub.price ?? series?.monthlyPrice ?? 0), 0)
                   return (
-                    <div key={seriesId} className="card-row">
-                      <div style={{ display: 'flex', alignItems: 'stretch', gap: 10, flex: 1 }}>
-                        <div style={{ width: 3, alignSelf: 'stretch', background: 'var(--green-light)', borderRadius: 2, flexShrink: 0 }} />
+                    <div key={seriesId} style={{ display: 'flex', borderBottom: '.5px solid var(--cream-dark)' }}>
+                      <div style={{ width: 3, flexShrink: 0, background: 'var(--green-light)', borderRadius: '2px 0 0 2px' }} />
+                      <div style={{ flex: 1, padding: '.85rem 1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div>
                           <div style={{ fontSize: 14, fontWeight: 500, color: '#2a2a2a' }}>{series?.name || '—'}</div>
                           <div style={{ fontSize: 12, color: '#8a7a6a' }}>{subs.length} suscritas · {nClasesSerie} clases</div>
                         </div>
+                        <div style={{ fontSize: 15, fontWeight: 500, color: '#2a6640' }}>{formatEur(total)}</div>
                       </div>
-                      <div style={{ fontSize: 15, fontWeight: 500, color: '#2a6640' }}>{formatEur(total)}</div>
                     </div>
                   )
                 })}
@@ -182,17 +182,17 @@ export default function FinanceScreen({ store, onOpenClass }: Props) {
                   const co = sueltaPaid.reduce((s, e) => s + e.total, 0)
                   const nIns = data.enrollments.filter(e => e.classId === c.id).length
                   return (
-                    <div key={c.id} className="card-row" style={{ cursor: 'pointer' }} onClick={() => onOpenClass(c.id)}>
-                      <div style={{ display: 'flex', alignItems: 'stretch', gap: 10, flex: 1 }}>
-                        <div style={{ width: 3, alignSelf: 'stretch', background: '#e8e4f0', borderRadius: 2, flexShrink: 0 }} />
+                    <div key={c.id} style={{ display: 'flex', borderBottom: '.5px solid var(--cream-dark)', cursor: 'pointer' }} onClick={() => onOpenClass(c.id)}>
+                      <div style={{ width: 3, flexShrink: 0, background: '#e8e4f0', borderRadius: '2px 0 0 2px' }} />
+                      <div style={{ flex: 1, padding: '.85rem 1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div>
                           <div style={{ fontSize: 14, fontWeight: 500, color: '#2a2a2a' }}>{c.name}</div>
                           <div style={{ fontSize: 12, color: '#8a7a6a' }}>{new Date(c.date + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} · {nIns} alumnas</div>
                         </div>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <div style={{ fontSize: 15, fontWeight: 500, color: '#2a6640' }}>{formatEur(co)}</div>
-                        <span style={{ fontSize: 12, color: '#c8c0b0', marginLeft: 8 }}>›</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <div style={{ fontSize: 15, fontWeight: 500, color: '#2a6640' }}>{formatEur(co)}</div>
+                          <span style={{ fontSize: 12, color: '#c8c0b0', marginLeft: 8 }}>›</span>
+                        </div>
                       </div>
                     </div>
                   )

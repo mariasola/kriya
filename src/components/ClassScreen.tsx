@@ -286,9 +286,9 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
         <label className="field-label">Sala</label>
         {data.rooms.length > 0 && !showInlineRoom && (
           <>
-            <select className="field-input" value={editForm.roomId} onChange={e => setEditForm(f => ({ ...f, roomId: e.target.value }))}>
-              <option value="">Sin sala</option>
-              {data.rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+            <select className="field-input" value={editForm.roomId} onChange={e => setEditForm(f => ({ ...f, roomId: e.target.value }))} style={{ color: editForm.roomId ? undefined : 'var(--text-muted)' }}>
+              <option value="" style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>Sin sala</option>
+              {data.rooms.map(r => <option key={r.id} value={r.id} style={{ color: 'var(--text)' }}>{r.name}</option>)}
             </select>
             <span onClick={() => setShowInlineRoom(true)} style={{ display: 'inline-block', marginTop: 6, marginBottom: 4, fontSize: 13, color: '#3d4a2e', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
               + Añadir sala
@@ -307,9 +307,9 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
           <>
             <div style={{ height: 12 }} />
             <label className="field-label">Grupo (opcional)</label>
-            <select className="field-input" value={editForm.seriesId} onChange={e => setEditForm(f => ({ ...f, seriesId: e.target.value }))}>
-              <option value="">Sin grupo</option>
-              {data.classSeries.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            <select className="field-input" value={editForm.seriesId} onChange={e => setEditForm(f => ({ ...f, seriesId: e.target.value }))} style={{ color: editForm.seriesId ? undefined : 'var(--text-muted)' }}>
+              <option value="" style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>Sin grupo</option>
+              {data.classSeries.map(s => <option key={s.id} value={s.id} style={{ color: 'var(--text)' }}>{s.name}</option>)}
             </select>
           </>
         )}

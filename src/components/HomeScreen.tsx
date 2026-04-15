@@ -18,7 +18,7 @@ export default function HomeScreen({ store, onOpenClass, isActiveTab, onOpenGrou
   const { data, loading, addClass, addRoom } = store
   const today = new Date()
   const [showNew, setShowNew] = useState(false)
-  const [form, setForm] = useState({ name: '', date: toISO(today), time: '10:00', capacity: '8', price: '20', roomCost: '', roomId: '', seriesId: '' })
+  const [form, setForm] = useState({ name: '', date: toISO(today), time: '', capacity: '', price: '', roomCost: '', roomId: '', seriesId: '' })
   const [showInlineRoom, setShowInlineRoom] = useState(false)
   const [saving, setSaving] = useState(false)
 
@@ -53,7 +53,7 @@ export default function HomeScreen({ store, onOpenClass, isActiveTab, onOpenGrou
       await addClass({
         name: form.name,
         date: form.date,
-        time: form.time,
+        time: form.time || '10:00',
         roomId: form.roomId,
         capacity: parseInt(form.capacity) || 8,
         price: hasGroup ? 0 : (parseInt(form.price) || 20),
@@ -62,7 +62,7 @@ export default function HomeScreen({ store, onOpenClass, isActiveTab, onOpenGrou
         seriesId: hasGroup ? form.seriesId : null
       })
       setShowNew(false)
-      setForm({ name: '', date: toISO(today), time: '10:00', capacity: '8', price: '20', roomCost: '', roomId: data.rooms[0]?.id || '', seriesId: '' })
+      setForm({ name: '', date: toISO(today), time: '', capacity: '', price: '', roomCost: '', roomId: data.rooms[0]?.id || '', seriesId: '' })
     } finally {
       setSaving(false)
     }
@@ -142,12 +142,12 @@ export default function HomeScreen({ store, onOpenClass, isActiveTab, onOpenGrou
         <input className="field-input" placeholder="Ej. Hatha mañana" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           <div><label className="field-label">Fecha</label><input className="field-input" type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} style={{ marginBottom: 0 }} /></div>
-          <div><label className="field-label">Hora</label><input className="field-input" type="time" value={form.time} onChange={e => setForm(f => ({ ...f, time: e.target.value }))} style={{ marginBottom: 0 }} /></div>
+          <div><label className="field-label">Hora</label><input className="field-input" type="time" value={form.time} onChange={e => setForm(f => ({ ...f, time: e.target.value }))} placeholder="10:00" style={{ marginBottom: 0 }} /></div>
         </div>
         <div style={{ height: 12 }} />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-          <div><label className="field-label">Capacidad</label><input className="field-input" type="number" value={form.capacity} onChange={e => setForm(f => ({ ...f, capacity: e.target.value }))} style={{ marginBottom: 0 }} /></div>
-          <div><label className="field-label">Coste sala (€)</label><input className="field-input" type="number" value={form.roomCost} onChange={e => setForm(f => ({ ...f, roomCost: e.target.value }))} style={{ marginBottom: 0 }} /></div>
+          <div><label className="field-label">Capacidad</label><input className="field-input" type="number" value={form.capacity} onChange={e => setForm(f => ({ ...f, capacity: e.target.value }))} placeholder="8" style={{ marginBottom: 0 }} /></div>
+          <div><label className="field-label">Coste sala (€)</label><input className="field-input" type="number" value={form.roomCost} onChange={e => setForm(f => ({ ...f, roomCost: e.target.value }))} placeholder="0" style={{ marginBottom: 0 }} /></div>
         </div>
         <div style={{ height: 12 }} />
         <label className="field-label">Sala</label>
@@ -173,9 +173,9 @@ export default function HomeScreen({ store, onOpenClass, isActiveTab, onOpenGrou
           <>
             <div style={{ height: 12 }} />
             <label className="field-label">Grupo (opcional)</label>
-            <select className="field-input" value={form.seriesId} onChange={e => setForm(f => ({ ...f, seriesId: e.target.value }))}>
-              <option value="">Sin grupo</option>
-              {data.classSeries.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            <select className="field-input" value={form.seriesId} onChange={e => setForm(f => ({ ...f, seriesId: e.target.value }))} style={{ color: form.seriesId ? undefined : 'var(--text-muted)' }}>
+              <option value="" style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>Sin grupo</option>
+              {data.classSeries.map(s => <option key={s.id} value={s.id} style={{ color: 'var(--text)' }}>{s.name}</option>)}
             </select>
           </>
         )}
@@ -190,7 +190,7 @@ export default function HomeScreen({ store, onOpenClass, isActiveTab, onOpenGrou
         ) : (
           <>
             <label className="field-label">Precio clase (€)</label>
-            <input className="field-input" type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} />
+            <input className="field-input" type="number" value={form.price} onChange={e => setForm(f => ({ ...f, price: e.target.value }))} placeholder="20" />
           </>
         )}
         <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ opacity: saving ? 0.6 : 1 }}>{saving ? 'Guardando...' : 'Guardar clase'}</button>

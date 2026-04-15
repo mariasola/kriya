@@ -62,7 +62,10 @@ export default function HomeScreen({ store, onOpenClass, isActiveTab }: Props) {
       <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh' }}>
         <div className="hdr">
           <div className="hdr-lbl">{cap1(today.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }))}</div>
-          <div className="hdr-title">Esta semana</div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div className="hdr-title">Esta semana</div>
+            <button onClick={() => console.log('grupos')} style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 20, padding: '4px 12px', fontSize: 9, color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", flexShrink: 0, marginBottom: '.9rem' }}>Grupos ›</button>
+          </div>
           <div className="metrics">
             <div className="metric"><div className="metric-val">{thisWeek.length}</div><div className="metric-lbl">clases</div></div>
             <div className="metric"><div className="metric-val green">{formatEur(cobrado)}</div><div className="metric-lbl">cobrado</div></div>
@@ -80,20 +83,26 @@ export default function HomeScreen({ store, onOpenClass, isActiveTab }: Props) {
                 const ins = data.enrollments.filter(i => i.classId === c.id)
                 const f = new Date(c.date + 'T12:00:00')
                 return (
-                  <div key={c.id} className={`ccard ${sameDay(f, today) ? 'today' : ''}`} onClick={() => onOpenClass(c.id)}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                        <span className="ccard-name">{c.name}</span>
-                        <span className="time-badge">{c.time}</span>
+                  <div key={c.id} style={{ display: 'flex', background: 'var(--white)', border: sameDay(f, today) ? '1px solid var(--olive-light)' : '.5px solid var(--border)', borderRadius: 14, overflow: 'hidden', marginBottom: 8, cursor: 'pointer', transition: 'transform .1s' }} onClick={() => onOpenClass(c.id)}>
+                    <div style={{ width: 3, flexShrink: 0, background: c.seriesId ? 'var(--green-light)' : 'transparent' }} />
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10, padding: '.85rem 1rem' }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                          <span className="ccard-name">{c.name}</span>
+                          <span className="time-badge">{c.time}</span>
+                        </div>
+                        <div className="ccard-sub">
+                          {room?.name}
+                          {c.roomPaid
+                            ? <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="#52582e" strokeWidth="1.2"/><path d="M4.5 7l1.8 1.8 3-3.6" stroke="#52582e" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            : <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="#b85c38" strokeWidth="1.2"/></svg>
+                          }
+                        </div>
                       </div>
-                      <div className="ccard-sub">
-                        {room?.name}
-                        {c.roomPaid ? <span className="dot-g" /> : <span className="dot-r" />}
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: 16, fontWeight: 500, color: '#2a2a2a' }}>{ins.length}/{c.capacity}</div>
+                        <div style={{ fontSize: 10, color: '#8a7a6a', marginTop: 2 }}>alumnas</div>
                       </div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: 16, fontWeight: 500, color: '#2a2a2a' }}>{ins.length}/{c.capacity}</div>
-                      <div style={{ fontSize: 10, color: '#8a7a6a', marginTop: 2 }}>alumnas</div>
                     </div>
                   </div>
                 )
@@ -102,8 +111,10 @@ export default function HomeScreen({ store, onOpenClass, isActiveTab }: Props) {
           ))}
           {keys.length > 0 && (
             <div className="legend">
-              <div className="legend-item"><span className="dot-g" />Sala pagada</div>
-              <div className="legend-item"><span className="dot-r" />Sin pagar</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <div style={{ width: 3, height: 12, background: 'var(--green-light)', borderRadius: 2 }} />
+                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>Clase recurrente</span>
+              </div>
             </div>
           )}
         </div>

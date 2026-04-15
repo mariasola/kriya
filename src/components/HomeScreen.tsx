@@ -7,14 +7,14 @@ import Sheet from './Sheet'
 import LoadingScreen from './ui/LoadingScreen'
 import InlineRoomForm from './ui/InlineRoomForm'
 
-interface Props { store: HomeScreenStore; onOpenClass: (id: string) => void; isActiveTab: boolean }
+interface Props { store: HomeScreenStore; onOpenClass: (id: string) => void; isActiveTab: boolean; onOpenGroups: () => void }
 
 function addDays(d: Date, n: number) { const r = new Date(d); r.setDate(r.getDate() + n); return r }
 function sameDay(a: Date, b: Date) { return a.toDateString() === b.toDateString() }
 function cap1(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }
 function toISO(d: Date) { return d.toISOString().split('T')[0] }
 
-export default function HomeScreen({ store, onOpenClass, isActiveTab }: Props) {
+export default function HomeScreen({ store, onOpenClass, isActiveTab, onOpenGroups }: Props) {
   const { data, loading, addClass, addRoom } = store
   const today = new Date()
   const [showNew, setShowNew] = useState(false)
@@ -64,7 +64,7 @@ export default function HomeScreen({ store, onOpenClass, isActiveTab }: Props) {
           <div className="hdr-lbl">{cap1(today.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }))}</div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div className="hdr-title">Esta semana</div>
-            <button onClick={() => console.log('grupos')} style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 20, padding: '4px 12px', fontSize: 9, color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", flexShrink: 0, marginBottom: '.9rem' }}>Grupos ›</button>
+            <button onClick={onOpenGroups} style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 20, padding: '4px 12px', fontSize: 9, color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.2)', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", flexShrink: 0, marginBottom: '.9rem' }}>Grupos ›</button>
           </div>
           <div className="metrics">
             <div className="metric"><div className="metric-val">{thisWeek.length}</div><div className="metric-lbl">clases</div></div>

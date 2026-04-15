@@ -205,6 +205,19 @@ export function useStore() {
     }
   }
 
+  const toggleSubscriptionStatus = async (subscriptionId: string) => {
+    const sub = data.subscriptions.find(s => s.id === subscriptionId)
+    if (!sub) return
+    const newStatus: SubscriptionStatus = sub.status === 'paid' ? 'pending' : 'paid'
+    try {
+      await updateSubscriptionStatus(subscriptionId, newStatus)
+      await reload()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al actualizar suscripción')
+      throw e
+    }
+  }
+
   const dismissError = () => setError(null)
 
   return {
@@ -214,6 +227,6 @@ export function useStore() {
     addStudent, updateStudent: updateStudentItem,
     addEnrollment, setEnrollmentStatus,
     addClassSeries, updateClassSeries: updateClassSeriesItem,
-    addSubscription, setSubscriptionStatus,
+    addSubscription, setSubscriptionStatus, toggleSubscriptionStatus,
   }
 }

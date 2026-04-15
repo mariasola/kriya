@@ -18,6 +18,11 @@ export default function StudentsScreen({ store, onOpenStudent }: Props) {
 
   if (loading) return <LoadingScreen />
 
+  const currentMonth = (() => { const n = new Date(); return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-01` })()
+  const subscribedIds = new Set(data.subscriptions.filter(s => s.month === currentMonth).map(s => s.studentId))
+  const nSubscribed = data.students.filter(s => subscribedIds.has(s.id)).length
+  const nOccasional = data.students.length - nSubscribed
+
   async function handleSave() {
     if (!form.name.trim()) return
     if (saving) return
@@ -43,13 +48,12 @@ export default function StudentsScreen({ store, onOpenStudent }: Props) {
               <div className="metric-val">{data.students.length}</div>
               <div className="metric-lbl">alumnas</div>
             </div>
-            {/* Suscritas y Puntuales: placeholders visuales para cuando existan suscripciones */}
-            <div className="metric" style={{ opacity: 0.35 }}>
-              <div className="metric-val">—</div>
+            <div className="metric">
+              <div className="metric-val green">{nSubscribed}</div>
               <div className="metric-lbl">suscritas</div>
             </div>
-            <div className="metric" style={{ opacity: 0.35 }}>
-              <div className="metric-val">—</div>
+            <div className="metric">
+              <div className="metric-val">{nOccasional}</div>
               <div className="metric-lbl">puntuales</div>
             </div>
           </div>
@@ -59,16 +63,17 @@ export default function StudentsScreen({ store, onOpenStudent }: Props) {
             {data.students.length === 0 && <div className="card-row"><span style={{ fontSize: 13, color: '#8a7a6a' }}>Sin alumnas aún</span></div>}
             {data.students.map(s => {
               const nClases = data.enrollments.filter(e => e.studentId === s.id && e.status !== 'no_show').length
+              const isSuscrita = subscribedIds.has(s.id)
+              const avatarStyle = isSuscrita
+                ? { background: '#c8d9a0', color: '#3d4a2e' }
+                : { background: '#e8e4f0', color: '#57467b' }
+              const sublabel = isSuscrita ? `${nClases} clases · suscrita este mes` : `${nClases} clases · puntual`
               return (
                 <div key={s.id} className="arow" onClick={() => onOpenStudent(s.id)}>
-                  <div className="avatar">{getInitials(s.name)}</div>
+                  <div className="avatar" style={avatarStyle}>{getInitials(s.name)}</div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 14, fontWeight: 500, color: '#2a2a2a' }}>{s.name}</div>
-                    <div style={{ fontSize: 12, color: '#8a7a6a', marginTop: 2 }}>{s.phone || 'Sin teléfono'}</div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 14, fontWeight: 500, color: '#2a2a2a' }}>{nClases}</div>
-                    <div style={{ fontSize: 10, color: '#8a7a6a' }}>clases</div>
+                    <div style={{ fontSize: 12, color: '#8a7a6a', marginTop: 2 }}>{sublabel}</div>
                   </div>
                 </div>
               )

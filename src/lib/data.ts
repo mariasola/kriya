@@ -1,5 +1,5 @@
 import { supabase } from './supabase'
-import { AppData, Room, Class, Student, Enrollment } from './types'
+import { AppData, Room, Class, Student, Enrollment, ClassSeries, Subscription, SubscriptionStatus } from './types'
 
 
 // ── Mappers (snake_case DB → camelCase frontend) ───────────────────────────
@@ -24,8 +24,31 @@ export function mapClass(c: any): Class {
 export function mapEnrollment(e: any): Enrollment {
   return {
     id: e.id, classId: e.class_id, studentId: e.student_id,
-    status: e.status, deposit: e.deposit, total: e.total
+    status: e.status, deposit: e.deposit, total: e.total,
+    priceOverride: e.price_override ?? null,
   }
+}
+
+export function mapClassSeries(s: any): ClassSeries {
+  return {
+    id: s.id, name: s.name, description: s.description || undefined,
+    monthlyPrice: s.monthly_price, userId: s.user_id, createdAt: s.created_at,
+  }
+}
+
+export function mapSubscription(s: any): Subscription {
+  return {
+    id: s.id, studentId: s.student_id, seriesId: s.series_id,
+    month: s.month, price: s.price ?? null, status: s.status,
+    userId: s.user_id, createdAt: s.created_at,
+  }
+}
+
+// ── Price helper ───────────────────────────────────────────────────────────
+
+export function calculateClassPrice(monthlyPrice: number, classesInMonth: number): number {
+  if (classesInMonth === 0) return 0
+  return monthlyPrice / classesInMonth
 }
 
 // ── Auth helper ────────────────────────────────────────────────────────────
@@ -48,17 +71,23 @@ function unwrap<T>(result: { data: T | null; error: any }): T {
 
 export async function loadData(): Promise<AppData> {
   const userId = await getUserId()
-  const [rooms, students, classes, enrollments] = await Promise.all([
+  const now = new Date()
+  const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+  const [rooms, students, classes, enrollments, classSeries, subscriptions] = await Promise.all([
     supabase.from('rooms').select('*').eq('user_id', userId).order('created_at'),
     supabase.from('students').select('*').eq('user_id', userId).order('name'),
     supabase.from('classes').select('*').eq('user_id', userId).order('date'),
     supabase.from('enrollments').select('*').eq('user_id', userId),
+    supabase.from('class_series').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+    supabase.from('subscriptions').select('*').eq('user_id', userId).eq('month', currentMonth),
   ])
   return {
     rooms: (rooms.data || []).map(mapRoom),
     students: (students.data || []).map(mapStudent),
     classes: (classes.data || []).map(mapClass),
     enrollments: (enrollments.data || []).map(mapEnrollment),
+    classSeries: (classSeries.data || []).map(mapClassSeries),
+    subscriptions: (subscriptions.data || []).map(mapSubscription),
   }
 }
 
@@ -154,4 +183,66 @@ export async function updateEnrollment(id: string, changes: Partial<Enrollment>)
   const row = unwrap(await supabase.from('enrollments')
     .update(update).eq('id', id).eq('user_id', userId).select().single())
   return mapEnrollment(row)
+}
+
+// ── ClassSeries ────────────────────────────────────────────────────────────
+
+export async function getClassSeries(): Promise<ClassSeries[]> {
+  const userId = await getUserId()
+  const { data } = await supabase.from('class_series').select('*').eq('user_id', userId).order('created_at', { ascending: false })
+  return (data || []).map(mapClassSeries)
+}
+
+export async function createClassSeries(data: Omit<ClassSeries, 'id' | 'userId' | 'createdAt'>): Promise<ClassSeries> {
+  const userId = await getUserId()
+  const row = unwrap(await supabase.from('class_series')
+    .insert({ name: data.name, description: data.description ?? null, monthly_price: data.monthlyPrice, user_id: userId })
+    .select().single())
+  return mapClassSeries(row)
+}
+
+export async function updateClassSeries(id: string, changes: Partial<Pick<ClassSeries, 'name' | 'description' | 'monthlyPrice'>>): Promise<ClassSeries> {
+  const userId = await getUserId()
+  const update: any = {}
+  if (changes.name !== undefined) update.name = changes.name
+  if (changes.description !== undefined) update.description = changes.description
+  if (changes.monthlyPrice !== undefined) update.monthly_price = changes.monthlyPrice
+  const row = unwrap(await supabase.from('class_series')
+    .update(update).eq('id', id).eq('user_id', userId).select().single())
+  return mapClassSeries(row)
+}
+
+// ── Subscriptions ──────────────────────────────────────────────────────────
+
+export async function getSubscriptionsBySeriesAndMonth(seriesId: string, month: string): Promise<Subscription[]> {
+  const userId = await getUserId()
+  const { data } = await supabase.from('subscriptions').select('*').eq('user_id', userId).eq('series_id', seriesId).eq('month', month)
+  return (data || []).map(mapSubscription)
+}
+
+export async function getSubscriptionsByStudent(studentId: string): Promise<Subscription[]> {
+  const userId = await getUserId()
+  const { data } = await supabase.from('subscriptions').select('*').eq('user_id', userId).eq('student_id', studentId).order('month', { ascending: false })
+  return (data || []).map(mapSubscription)
+}
+
+export async function getSubscriptionsByMonth(month: string): Promise<Subscription[]> {
+  const userId = await getUserId()
+  const { data } = await supabase.from('subscriptions').select('*').eq('user_id', userId).eq('month', month)
+  return (data || []).map(mapSubscription)
+}
+
+export async function createSubscription(data: Omit<Subscription, 'id' | 'userId' | 'createdAt'>): Promise<Subscription> {
+  const userId = await getUserId()
+  const row = unwrap(await supabase.from('subscriptions')
+    .insert({ student_id: data.studentId, series_id: data.seriesId, month: data.month, price: data.price ?? null, status: data.status, user_id: userId })
+    .select().single())
+  return mapSubscription(row)
+}
+
+export async function updateSubscriptionStatus(id: string, status: SubscriptionStatus): Promise<Subscription> {
+  const userId = await getUserId()
+  const row = unwrap(await supabase.from('subscriptions')
+    .update({ status }).eq('id', id).eq('user_id', userId).select().single())
+  return mapSubscription(row)
 }

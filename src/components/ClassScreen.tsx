@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { ClassScreenStore } from '@/hooks/useStore'
 import { getRevenue, getPending, getInitials, formatEur } from '@/lib/calculations'
-import { EnrollmentStatus, Enrollment, Subscription, Class } from '@/lib/types'
+import { EnrollmentStatus, Enrollment, Subscription, Class, ClassSeries } from '@/lib/types'
 import Sheet from './Sheet'
 import LoadingScreen from './ui/LoadingScreen'
 import StatusBadge from './ui/StatusBadge'
@@ -50,8 +50,55 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
   const cls = data.classes.find(c => c.id === classId)!
   const room = data.rooms.find(r => r.id === cls?.roomId)
   const ins = data.enrollments.filter(e => e.classId === classId)
-  const cobrado = getRevenue(cls?.price ?? 20, ins)
-  const pendiente = getPending(cls?.price ?? 20, ins)
+  
+  // For group classes, calculate the proper class price from the series
+  const series = cls?.seriesId ? data.classSeries.find(s => s.id === cls.seriesId) : null
+  const classMonth = cls ? cls.date.slice(0, 7) + '-01' : ''
+  const classesInMonth = series 
+    ? data.classes.filter(c => c.seriesId === series.id && c.date.startsWith(cls.date.slice(0, 7))).length 
+    : 0
+  const calculatedClassPrice = series && classesInMonth > 0 
+    ? series.monthlyPrice / classesInMonth 
+    : (cls?.price ?? 20)
+  
+  // For group classes, revenue comes from subscriptions (for subscribed students) 
+  // and enrollments (for occasional/new students)
+  let cobrado = 0
+  let pendiente = 0
+  if (series) {
+    // Classify enrollments to separate subscribed vs occasional/new
+    const subscriptionsForMonth = data.subscriptions.filter(
+      s => s.seriesId === series.id && s.month === classMonth
+    )
+    const subscribedStudentIds = new Set(subscriptionsForMonth.map(s => s.studentId))
+    
+    for (const e of ins) {
+      const effectivePrice = e.priceOverride ?? calculatedClassPrice
+      if (subscribedStudentIds.has(e.studentId)) {
+        // Subscribed student: check subscription status
+        const sub = subscriptionsForMonth.find(s => s.studentId === e.studentId)
+        if (sub?.status === 'paid') {
+          cobrado += effectivePrice
+        } else {
+          pendiente += effectivePrice
+        }
+      } else {
+        // Occasional/new student: check enrollment status
+        if (e.status === 'paid') {
+          cobrado += effectivePrice
+        } else if (e.status === 'deposit_paid') {
+          cobrado += e.deposit
+          pendiente += effectivePrice - e.deposit
+        } else if (e.status === 'registered') {
+          pendiente += effectivePrice
+        }
+      }
+    }
+  } else {
+    // Non-group class: use the simple calculation
+    cobrado = getRevenue(cls?.price ?? 20, ins)
+    pendiente = getPending(cls?.price ?? 20, ins)
+  }
 
   const [editSheet, setEditSheet] = useState(false)
   const [addSheet, setAddSheet] = useState(false)
@@ -114,7 +161,6 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
   const curEnrollment = statusSheet ? data.enrollments.find(e => e.id === statusSheet) : null
   const curStudent = curEnrollment ? data.students.find(s => s.id === curEnrollment.studentId) : null
 
-  const classMonth = cls.date.slice(0, 7) + '-01'
   const hasSeries = !!cls.seriesId
   const { subscribed, occasional, newStudents } = hasSeries
     ? classifyEnrollments(ins, data.subscriptions, data.enrollments, data.classes, cls.seriesId!, cls.date, classMonth)

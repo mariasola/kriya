@@ -10,13 +10,14 @@ interface Props { store: FinanceScreenStore; onOpenClass: (id: string) => void }
 const MONTHS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
 
 export default function FinanceScreen({ store, onOpenClass }: Props) {
-  const { data, loading, updateRoom } = store
+  const { data, loading, updateRoom, deleteRoom } = store
   const today = new Date()
   const [sel, setSel] = useState({ month: today.getMonth(), year: today.getFullYear() })
   const { month: selMonth, year: selYear } = sel
   const [pendSheet, setPendSheet] = useState(false)
   const [editRoomId, setEditRoomId] = useState<string | null>(null)
   const [roomEditForm, setRoomEditForm] = useState({ name: '', address: '' })
+  const [confirmDeleteRoomId, setConfirmDeleteRoomId] = useState<string | null>(null)
 
   if (loading) return <LoadingScreen />
 
@@ -219,6 +220,25 @@ export default function FinanceScreen({ store, onOpenClass }: Props) {
           setEditRoomId(null)
         }}>Guardar</button>
         <button className="btn-ghost" onClick={() => setEditRoomId(null)}>Cancelar</button>
+        <div style={{ marginTop: 16, borderTop: '.5px solid #e8e0d0', paddingTop: 16 }}>
+          <button className="btn-destructive" onClick={() => { setConfirmDeleteRoomId(editRoomId); setEditRoomId(null) }}>Eliminar sala</button>
+        </div>
+      </Sheet>
+
+      <Sheet open={!!confirmDeleteRoomId} onClose={() => setConfirmDeleteRoomId(null)} title="Eliminar sala">
+        {(() => {
+          const r = confirmDeleteRoomId ? data.rooms.find(x => x.id === confirmDeleteRoomId) : null
+          return (
+            <>
+              <p style={{ fontSize: 14, color: '#5a4a3a', marginBottom: 16, lineHeight: 1.5 }}>¿Eliminar la sala <strong>{r?.name}</strong>? Las clases vinculadas a esta sala quedarán sin sala asignada. Esta acción no se puede deshacer.</p>
+              <button className="btn-destructive" onClick={async () => {
+                if (confirmDeleteRoomId) await deleteRoom(confirmDeleteRoomId)
+                setConfirmDeleteRoomId(null)
+              }}>Sí, eliminar</button>
+              <button className="btn-ghost" onClick={() => setConfirmDeleteRoomId(null)}>Cancelar</button>
+            </>
+          )
+        })()}
       </Sheet>
 
       <Sheet open={pendSheet} onClose={() => setPendSheet(false)} title="Pendiente de cobrar">

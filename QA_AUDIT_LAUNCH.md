@@ -10,13 +10,11 @@
 
 ## TL;DR — Qué bloquea el lanzamiento
 
-Hay **6 issues críticos** que impiden técnicamente abrir el producto a alguien que no seas tú:
+Hay **3 issues críticos** que impiden técnicamente abrir el producto a alguien que no seas tú:
 
 1. **No se puede registrar nadie**: `AuthScreen` solo tiene login; no existe `signUp` ni link a registro.
 2. **No hay recuperación de contraseña**: ningún flow llama a `supabase.auth.resetPasswordForEmail`.
-3. **No se puede borrar una inscripción** (bug ya confirmado en `PRODUCTIZATION_CONTEXT.md`).
-4. **No se puede borrar una alumna ni una sala**: si el usuario se equivoca al crear, no hay forma de limpiar.
-5. **`HomeScreen` muestra 0€ cobrado/pendiente para clases de grupo**: las clases asociadas a una serie tienen `price = 0` en BBDD y `getRevenue(0, ...) = 0`, así que la métrica de "Esta semana" infraestima ingresos reales.
+3. **`HomeScreen` muestra 0€ cobrado/pendiente para clases de grupo**: las clases asociadas a una serie tienen `price = 0` en BBDD y `getRevenue(0, ...) = 0`, así que la métrica de "Esta semana" infraestima ingresos reales.
 
 Adicionalmente hay **inconsistencias en cálculos financieros** que harán que los números no cuadren cuando suban precios o usen `priceOverride`. Detalle abajo.
 
@@ -37,24 +35,6 @@ Adicionalmente hay **inconsistencias en cálculos financieros** que harán que l
 **Qué pasa**: no hay link "¿Has olvidado tu contraseña?". `grep resetPasswordForEmail` en `src/` → 0 matches. Si una usuaria olvida su clave, no tiene forma de recuperarla desde la app.
 **Impacto**: una usuaria queda fuera de su cuenta sin poder volver.
 **Severidad**: bloquea el uso.
-
-#### B-03 — No se puede borrar una inscripción (enrollment)
-**Dónde**: `src/lib/data.ts`, `src/hooks/useStore.ts`, `src/components/ClassScreen.tsx`.
-**Qué pasa**: `grep deleteEnrollment` → 0 matches. La única forma de "quitar" a una alumna apuntada por error es marcarla como `no_show`, lo cual contamina el historial. El sheet de cambio de estado en `ClassScreen` (`statusSheet`) no incluye opción de eliminar.
-**Impacto**: cualquier error al añadir alumna (typo, duplicada, alumna equivocada) ensucia los datos para siempre.
-**Severidad**: bloquea el uso real.
-
-#### B-04 — No se puede borrar una alumna
-**Dónde**: `src/components/StudentDetail.tsx`, `src/lib/data.ts`.
-**Qué pasa**: `grep deleteStudent` → 0 matches. El detalle de alumna solo permite editar. `BUSINESS_RULES.md` lo reconoce ("Una alumna eliminada no está implementada en MVP") pero para uso comercial no se sostiene.
-**Impacto**: alumnas duplicadas por el fuzzy match (escribir "María García" cuando ya existe "Maria Garcia") quedan permanentemente en el directorio inflando métricas.
-**Severidad**: bloquea el uso real.
-
-#### B-05 — No se puede borrar una sala
-**Dónde**: ningún componente, `src/lib/data.ts`.
-**Qué pasa**: `grep deleteRoom` → 0 matches. Solo se puede editar nombre/dirección desde `FinanceScreen` (y solo si la sala tiene clases en el mes seleccionado). Las salas sin clases en el mes actual son invisibles y no se pueden modificar.
-**Impacto**: salas creadas mal o ya no usadas se acumulan en el selector de Nueva clase.
-**Severidad**: bloquea el uso a medio plazo.
 
 #### B-08 — `HomeScreen` calcula 0€ para clases de grupo
 **Dónde**: `src/components/HomeScreen.tsx:34-35`.
@@ -256,15 +236,6 @@ roomCost: parseInt(form.roomCost) || 0,
 
 Acciones que el usuario *intentaría* hacer pero el código no soporta:
 
-### F-01 · Borrar inscripción
-La usuaria pulsa una alumna en `ClassScreen`, abre el sheet de estados, pero no hay opción "Quitar de esta clase". (Bug B-03.)
-
-### F-02 · Borrar/archivar alumna
-`StudentDetail` muestra historial pero no permite eliminar ni archivar. (Bug B-04.)
-
-### F-03 · Borrar sala / Pantalla de "mis salas"
-No existe una pantalla "Salas" en la nav. Solo se puede editar (no borrar) una sala que tenga clases en el mes actualmente visible en finanzas. (Bug B-05.)
-
 ### F-04 · Registro
 Ningún input para crear cuenta. (Bug B-01.)
 
@@ -417,7 +388,7 @@ Asumiendo que se cablee `signUp`: la app no maneja el estado "registrada pero si
 
 Antes de dar acceso a la primera profesora externa:
 
-**Imprescindible (no se puede lanzar sin esto)**: B-01, B-02, B-03, B-04, B-05, B-08.
+**Imprescindible (no se puede lanzar sin esto)**: B-01, B-02, B-08.
 
 **Muy recomendado (causa datos incorrectos visibles en la primera semana)**: B-09, B-10, B-11, B-12, B-13, B-14, B-15, B-16, B-17, B-19, B-20.
 

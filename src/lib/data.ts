@@ -115,6 +115,12 @@ export async function updateRoom(id: string, changes: Partial<Room>): Promise<Ro
   return mapRoom(row)
 }
 
+export async function deleteRoom(id: string): Promise<void> {
+  const userId = await getUserId()
+  const { error } = await supabase.from('rooms').delete().eq('id', id).eq('user_id', userId)
+  if (error) throw new Error(error.message)
+}
+
 // ── Students ───────────────────────────────────────────────────────────────
 
 export async function createStudent(data: Omit<Student, 'id'>): Promise<Student> {
@@ -131,6 +137,12 @@ export async function updateStudent(id: string, changes: Partial<Student>): Prom
     .update({ name: changes.name, phone: changes.phone, notes: changes.notes })
     .eq('id', id).eq('user_id', userId).select().single())
   return mapStudent(row)
+}
+
+export async function deleteStudent(id: string): Promise<void> {
+  const userId = await getUserId()
+  const { error } = await supabase.from('students').delete().eq('id', id).eq('user_id', userId)
+  if (error) throw new Error(error.message)
 }
 
 // ── Classes ────────────────────────────────────────────────────────────────
@@ -192,6 +204,12 @@ export async function updateEnrollment(id: string, changes: Partial<Enrollment>)
   const row = unwrap(await supabase.from('enrollments')
     .update(update).eq('id', id).eq('user_id', userId).select().single())
   return mapEnrollment(row)
+}
+
+export async function deleteEnrollment(id: string): Promise<void> {
+  const userId = await getUserId()
+  const { error } = await supabase.from('enrollments').delete().eq('id', id).eq('user_id', userId)
+  if (error) throw new Error(error.message)
 }
 
 // ── ClassSeries ────────────────────────────────────────────────────────────

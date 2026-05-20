@@ -88,8 +88,12 @@ function AuthenticatedApp() {
           onDelete={selectedSeries ? async () => {
             await store.deleteClassSeries(selectedSeries.id)
             setSelectedSeries(null)
-            goBack()
-            goBack() // Go back twice: form → detail → groups list
+            // Navigate back two levels atomically. Two sequential goBack() calls
+            // both read the same stale screenStack closure and call setScreen
+            // to 'groupDetail' twice, leaving a blank screen when selectedSeries is null.
+            const targetScreen = screenStack[screenStack.length - 2] ?? tab
+            setScreenStack(screenStack.slice(0, -2))
+            setScreen(targetScreen)
           } : undefined}
         />
       )}

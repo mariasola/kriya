@@ -20,8 +20,10 @@ export default function FinanceScreen({ store, onOpenClass }: Props) {
 
   if (loading) return <LoadingScreen />
 
-  const currentMonth = today.getMonth()
-  const monthOrder = Array.from({ length: 12 }, (_, i) => (currentMonth + i) % 12)
+  const monthRange = Array.from({ length: 12 }, (_, i) => {
+    const d = new Date(today.getFullYear(), today.getMonth() - 6 + i, 1)
+    return { month: d.getMonth(), year: d.getFullYear() }
+  })
 
   const classesMes = data.classes.filter(c => {
     const f = new Date(c.date + 'T12:00:00')
@@ -91,11 +93,10 @@ export default function FinanceScreen({ store, onOpenClass }: Props) {
           <div className="hdr-lbl">Resumen</div>
           <div className="hdr-title">Finanzas</div>
           <div className="month-pills">
-            {monthOrder.map(m => {
-              const yr = m < currentMonth ? selYear + 1 : selYear
-              const showYr = yr !== selYear ? ` '${String(yr).slice(2)}` : ''
+            {monthRange.map(({ month: m, year: yr }) => {
+              const showYr = yr !== today.getFullYear() ? ` '${String(yr).slice(2)}` : ''
               return (
-                <button key={m} className={`mpill ${m === selMonth && yr === selYear ? 'active' : ''}`} onClick={() => setSel({ month: m, year: yr })}>
+                <button key={`${yr}-${m}`} className={`mpill ${m === selMonth && yr === selYear ? 'active' : ''}`} onClick={() => setSel({ month: m, year: yr })}>
                   {MONTHS[m]}{showYr}
                 </button>
               )

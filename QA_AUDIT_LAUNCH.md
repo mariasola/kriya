@@ -10,14 +10,13 @@
 
 ## TL;DR — Qué bloquea el lanzamiento
 
-Hay **7 issues críticos** que impiden técnicamente abrir el producto a alguien que no seas tú:
+Hay **6 issues críticos** que impiden técnicamente abrir el producto a alguien que no seas tú:
 
 1. **No se puede registrar nadie**: `AuthScreen` solo tiene login; no existe `signUp` ni link a registro.
 2. **No hay recuperación de contraseña**: ningún flow llama a `supabase.auth.resetPasswordForEmail`.
 3. **No se puede borrar una inscripción** (bug ya confirmado en `PRODUCTIZATION_CONTEXT.md`).
 4. **No se puede borrar una alumna ni una sala**: si el usuario se equivoca al crear, no hay forma de limpiar.
-5. **`FinanceScreen` solo navega hacia adelante en el tiempo**: el usuario no puede consultar finanzas de meses pasados.
-6. **`HomeScreen` muestra 0€ cobrado/pendiente para clases de grupo**: las clases asociadas a una serie tienen `price = 0` en BBDD y `getRevenue(0, ...) = 0`, así que la métrica de "Esta semana" infraestima ingresos reales.
+5. **`HomeScreen` muestra 0€ cobrado/pendiente para clases de grupo**: las clases asociadas a una serie tienen `price = 0` en BBDD y `getRevenue(0, ...) = 0`, así que la métrica de "Esta semana" infraestima ingresos reales.
 
 Adicionalmente hay **inconsistencias en cálculos financieros** que harán que los números no cuadren cuando suban precios o usen `priceOverride`. Detalle abajo.
 
@@ -56,15 +55,6 @@ Adicionalmente hay **inconsistencias en cálculos financieros** que harán que l
 **Qué pasa**: `grep deleteRoom` → 0 matches. Solo se puede editar nombre/dirección desde `FinanceScreen` (y solo si la sala tiene clases en el mes seleccionado). Las salas sin clases en el mes actual son invisibles y no se pueden modificar.
 **Impacto**: salas creadas mal o ya no usadas se acumulan en el selector de Nueva clase.
 **Severidad**: bloquea el uso a medio plazo.
-
-#### B-06 — `FinanceScreen` no permite navegar a meses pasados
-**Dónde**: `src/components/FinanceScreen.tsx:24`.
-```ts
-const monthOrder = Array.from({ length: 12 }, (_, i) => (currentMonth + i) % 12)
-```
-**Qué pasa**: el array `monthOrder` empieza siempre en el mes actual y avanza 11 meses hacia adelante. Estando en mayo 2026, las opciones son `[May, Jun, Jul, Ago, Sep, Oct, Nov, Dic, Ene'27, Feb'27, Mar'27, Abr'27]`. No hay forma de seleccionar `Abril 2026` ni meses anteriores.
-**Impacto**: el caso de uso central de la pantalla de finanzas — "revisar lo que cobré el mes pasado" — está roto. Una profesora en mayo no puede ver lo que cobró en abril.
-**Severidad**: bloquea el uso de la pantalla de finanzas para cierres mensuales.
 
 #### B-08 — `HomeScreen` calcula 0€ para clases de grupo
 **Dónde**: `src/components/HomeScreen.tsx:34-35`.
@@ -427,7 +417,7 @@ Asumiendo que se cablee `signUp`: la app no maneja el estado "registrada pero si
 
 Antes de dar acceso a la primera profesora externa:
 
-**Imprescindible (no se puede lanzar sin esto)**: B-01, B-02, B-03, B-04, B-05, B-06, B-08.
+**Imprescindible (no se puede lanzar sin esto)**: B-01, B-02, B-03, B-04, B-05, B-08.
 
 **Muy recomendado (causa datos incorrectos visibles en la primera semana)**: B-09, B-10, B-11, B-12, B-13, B-14, B-15, B-16, B-17, B-19, B-20.
 

@@ -88,11 +88,12 @@ function AuthenticatedApp() {
           onDelete={selectedSeries ? async () => {
             await store.deleteClassSeries(selectedSeries.id)
             setSelectedSeries(null)
-            // Navigate back two levels atomically. Two sequential goBack() calls
-            // both read the same stale screenStack closure and call setScreen
-            // to 'groupDetail' twice, leaving a blank screen when selectedSeries is null.
-            const targetScreen = screenStack[screenStack.length - 2] ?? tab
-            setScreenStack(screenStack.slice(0, -2))
+            let targetScreen: Screen = tab
+            setScreenStack(prev => {
+              const nextStack = prev.slice(0, -2)
+              targetScreen = nextStack[nextStack.length - 1] ?? tab
+              return nextStack
+            })
             setScreen(targetScreen)
           } : undefined}
         />

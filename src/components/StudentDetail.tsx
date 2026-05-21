@@ -99,7 +99,7 @@ export default function StudentDetail({ store, studentId, onBack }: Props) {
       </Sheet>
 
       <Sheet open={confirmDelete} onClose={() => setConfirmDelete(false)} title="Eliminar alumna">
-        <p style={{ fontSize: 14, color: '#5a4a3a', marginBottom: 16, lineHeight: 1.5 }}>¿Eliminar a <strong>{student.name}</strong>? Se borrará también su historial de clases. Esta acción no se puede deshacer.</p>
+        <p style={{ fontSize: 14, color: '#5a4a3a', marginBottom: 16, lineHeight: 1.5 }}>¿Eliminar a <strong>{student.name}</strong>? Esta acción no se puede deshacer.</p>
         <button className="btn-destructive" onClick={async () => {
           await deleteStudent(studentId)
           setConfirmDelete(false)

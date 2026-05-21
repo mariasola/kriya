@@ -68,6 +68,10 @@ function unwrap<T>(result: { data: T | null; error: any }): T {
   return result.data
 }
 
+export function ensureDeleteAffectedRows(entity: string, count: number | null): void {
+  if (!count) throw new Error(`${entity} not found or you do not have permission to delete it`)
+}
+
 // ── Loaders ────────────────────────────────────────────────────────────────
 
 export async function loadData(): Promise<AppData> {
@@ -117,8 +121,9 @@ export async function updateRoom(id: string, changes: Partial<Room>): Promise<Ro
 
 export async function deleteRoom(id: string): Promise<void> {
   const userId = await getUserId()
-  const { error } = await supabase.from('rooms').delete().eq('id', id).eq('user_id', userId)
+  const { error, count } = await supabase.from('rooms').delete({ count: 'exact' }).eq('id', id).eq('user_id', userId)
   if (error) throw new Error(error.message)
+  ensureDeleteAffectedRows('Room', count)
 }
 
 // ── Students ───────────────────────────────────────────────────────────────
@@ -141,8 +146,9 @@ export async function updateStudent(id: string, changes: Partial<Student>): Prom
 
 export async function deleteStudent(id: string): Promise<void> {
   const userId = await getUserId()
-  const { error } = await supabase.from('students').delete().eq('id', id).eq('user_id', userId)
+  const { error, count } = await supabase.from('students').delete({ count: 'exact' }).eq('id', id).eq('user_id', userId)
   if (error) throw new Error(error.message)
+  ensureDeleteAffectedRows('Student', count)
 }
 
 // ── Classes ────────────────────────────────────────────────────────────────
@@ -208,8 +214,9 @@ export async function updateEnrollment(id: string, changes: Partial<Enrollment>)
 
 export async function deleteEnrollment(id: string): Promise<void> {
   const userId = await getUserId()
-  const { error } = await supabase.from('enrollments').delete().eq('id', id).eq('user_id', userId)
+  const { error, count } = await supabase.from('enrollments').delete({ count: 'exact' }).eq('id', id).eq('user_id', userId)
   if (error) throw new Error(error.message)
+  ensureDeleteAffectedRows('Enrollment', count)
 }
 
 // ── ClassSeries ────────────────────────────────────────────────────────────

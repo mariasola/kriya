@@ -416,9 +416,9 @@ Sin tests de integración. Imprescindible al menos uno antes de Fase 3: "crear c
 
 ## Sources
 
-- `CONTEXT.md` (`/Users/mariasolahornedo/Desktop/kriya/CONTEXT.md`)
-- `BUSINESS_RULES.md` (`/Users/mariasolahornedo/Desktop/kriya/BUSINESS_RULES.md`)
-- `CONVENTIONS.md` (`/Users/mariasolahornedo/Desktop/kriya/CONVENTIONS.md`)
-- `AUDIT.md` previo (`/Users/mariasolahornedo/Desktop/kriya/AUDIT.md`)
+- `CONTEXT.md`
+- `BUSINESS_RULES.md`
+- `CONVENTIONS.md`
+- `AUDIT.md` previo
 - `PRODUCTIZATION_CONTEXT.md` (uploaded)
 - Código auditado: `src/app/page.tsx`, `src/hooks/useStore.ts`, `src/lib/{data,types,calculations,supabase,utils}.ts`, `src/components/*.tsx`, `src/components/ui/*.tsx`, `src/app/layout.tsx`.

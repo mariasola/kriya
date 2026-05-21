@@ -230,7 +230,7 @@ export default function FinanceScreen({ store, onOpenClass }: Props) {
           const r = confirmDeleteRoomId ? data.rooms.find(x => x.id === confirmDeleteRoomId) : null
           return (
             <>
-              <p style={{ fontSize: 14, color: '#5a4a3a', marginBottom: 16, lineHeight: 1.5 }}>¿Eliminar la sala <strong>{r?.name}</strong>? Las clases vinculadas a esta sala quedarán sin sala asignada. Esta acción no se puede deshacer.</p>
+              <p style={{ fontSize: 14, color: '#5a4a3a', marginBottom: 16, lineHeight: 1.5 }}>¿Eliminar la sala <strong>{r?.name}</strong>? Esta acción no se puede deshacer.</p>
               <button className="btn-destructive" onClick={async () => {
                 if (confirmDeleteRoomId) await deleteRoom(confirmDeleteRoomId)
                 setConfirmDeleteRoomId(null)

@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 
 vi.mock('./supabase', () => ({ supabase: {} }))
 
-import { mapRoom, mapStudent, mapClass, mapEnrollment } from './data'
+import { mapRoom, mapStudent, mapClass, mapEnrollment, ensureDeleteAffectedRows } from './data'
 
 // ── mapRoom ────────────────────────────────────────────────────────────────
 
@@ -105,5 +105,21 @@ describe('mapEnrollment', () => {
     const result = mapEnrollment(row)
     expect(result.deposit).toBe(10)
     expect(result.total).toBe(0)
+  })
+})
+
+// ── ensureDeleteAffectedRows ───────────────────────────────────────────────
+
+describe('ensureDeleteAffectedRows', () => {
+  it('does not throw when one row is deleted', () => {
+    expect(() => ensureDeleteAffectedRows('Room', 1)).not.toThrow()
+  })
+
+  it('throws when zero rows are deleted', () => {
+    expect(() => ensureDeleteAffectedRows('Room', 0)).toThrow('Room not found or you do not have permission to delete it')
+  })
+
+  it('throws when count is null', () => {
+    expect(() => ensureDeleteAffectedRows('Student', null)).toThrow('Student not found or you do not have permission to delete it')
   })
 })

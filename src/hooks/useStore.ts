@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { AppData, Student, Class, Room, EnrollmentStatus, ClassSeries, Subscription, SubscriptionStatus } from '@/lib/types'
 import {
-  loadData, createRoom, updateRoom, createStudent, updateStudent,
-  createClass, updateClass, deleteClass, createEnrollment, updateEnrollment,
+  loadData, createRoom, updateRoom, deleteRoom, createStudent, updateStudent, deleteStudent,
+  createClass, updateClass, deleteClass, createEnrollment, updateEnrollment, deleteEnrollment,
   createClassSeries, updateClassSeries, deleteClassSeries, createSubscription, updateSubscriptionStatus,
 } from '@/lib/data'
 import { computeEnrollmentChanges } from '@/lib/calculations'
@@ -24,6 +24,7 @@ export interface ClassScreenStore {
   updateClass: (id: string, changes: Partial<Class>) => Promise<void>
   deleteClass: (id: string) => Promise<void>
   addEnrollment: (classId: string, studentId: string) => Promise<void>
+  deleteEnrollment: (id: string) => Promise<void>
   setEnrollmentStatus: (enrollmentId: string, status: EnrollmentStatus) => Promise<void>
   addStudent: (student: Omit<Student, 'id'>) => Promise<string>
   addRoom: (room: Omit<Room, 'id'>) => Promise<Room>
@@ -39,12 +40,14 @@ export interface StudentDetailStore {
   data: AppData
   loading: boolean
   updateStudent: (id: string, changes: Partial<Student>) => Promise<void>
+  deleteStudent: (id: string) => Promise<void>
 }
 
 export interface FinanceScreenStore {
   data: AppData
   loading: boolean
   updateRoom: (id: string, changes: Partial<Room>) => Promise<void>
+  deleteRoom: (id: string) => Promise<void>
 }
 
 // ── Hook ────────────────────────────────────────────────────────────────────
@@ -82,6 +85,16 @@ export function useStore() {
       await reload()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al actualizar sala')
+      throw e
+    }
+  }
+
+  const deleteRoomItem = async (id: string) => {
+    try {
+      await deleteRoom(id)
+      await reload()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al eliminar sala')
       throw e
     }
   }
@@ -137,6 +150,16 @@ export function useStore() {
     }
   }
 
+  const deleteStudentItem = async (id: string) => {
+    try {
+      await deleteStudent(id)
+      await reload()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al eliminar alumna')
+      throw e
+    }
+  }
+
   const addEnrollment = async (classId: string, studentId: string) => {
     const exists = data.enrollments.find(e => e.classId === classId && e.studentId === studentId)
     if (exists) return
@@ -145,6 +168,16 @@ export function useStore() {
       await reload()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al apuntar alumna')
+      throw e
+    }
+  }
+
+  const deleteEnrollmentItem = async (id: string) => {
+    try {
+      await deleteEnrollment(id)
+      await reload()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al quitar alumna')
       throw e
     }
   }
@@ -232,10 +265,10 @@ export function useStore() {
 
   return {
     data, loading, error, dismissError,
-    addRoom, updateRoom: updateRoomItem,
+    addRoom, updateRoom: updateRoomItem, deleteRoom: deleteRoomItem,
     addClass, updateClass: updateClassItem, deleteClass: deleteClassItem,
-    addStudent, updateStudent: updateStudentItem,
-    addEnrollment, setEnrollmentStatus,
+    addStudent, updateStudent: updateStudentItem, deleteStudent: deleteStudentItem,
+    addEnrollment, deleteEnrollment: deleteEnrollmentItem, setEnrollmentStatus,
     addClassSeries, updateClassSeries: updateClassSeriesItem, deleteClassSeries: deleteClassSeriesItem,
     addSubscription, setSubscriptionStatus, toggleSubscriptionStatus,
   }

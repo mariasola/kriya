@@ -11,10 +11,11 @@ interface Props { store: StudentDetailStore; studentId: string; onBack: () => vo
 import { isValidSpanishPhone } from '@/lib/utils'
 
 export default function StudentDetail({ store, studentId, onBack }: Props) {
-  const { data, loading, updateStudent } = store
+  const { data, loading, updateStudent, deleteStudent } = store
   const student = data.students.find(s => s.id === studentId)!
   const ins = data.enrollments.filter(e => e.studentId === studentId)
   const [editSheet, setEditSheet] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const [form, setForm] = useState({ name: student?.name || '', phone: student?.phone || '', notes: student?.notes || '' })
   const [phoneError, setPhoneError] = useState('')
   const [saving, setSaving] = useState(false)
@@ -92,6 +93,19 @@ export default function StudentDetail({ store, studentId, onBack }: Props) {
         <textarea className="field-input" rows={3} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
         <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ opacity: saving ? 0.6 : 1 }}>{saving ? 'Guardando...' : 'Guardar'}</button>
         <button className="btn-ghost" onClick={() => setEditSheet(false)}>Cancelar</button>
+        <div style={{ marginTop: 16, borderTop: '.5px solid #e8e0d0', paddingTop: 16 }}>
+          <button className="btn-destructive" onClick={() => { setEditSheet(false); setConfirmDelete(true) }}>Eliminar alumna</button>
+        </div>
+      </Sheet>
+
+      <Sheet open={confirmDelete} onClose={() => setConfirmDelete(false)} title="Eliminar alumna">
+        <p style={{ fontSize: 14, color: '#5a4a3a', marginBottom: 16, lineHeight: 1.5 }}>¿Eliminar a <strong>{student.name}</strong>? Esta acción no se puede deshacer.</p>
+        <button className="btn-destructive" onClick={async () => {
+          await deleteStudent(studentId)
+          setConfirmDelete(false)
+          onBack()
+        }}>Sí, eliminar</button>
+        <button className="btn-ghost" onClick={() => setConfirmDelete(false)}>Cancelar</button>
       </Sheet>
     </>
   )

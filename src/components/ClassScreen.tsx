@@ -46,7 +46,7 @@ const STATUS_OPTS: { v: EnrollmentStatus; l: string; c: string }[] = [
 ]
 
 export default function ClassScreen({ store, classId, onBack }: Props) {
-  const { data, loading, updateClass, deleteClass, addEnrollment, setEnrollmentStatus, addStudent, addRoom } = store
+  const { data, loading, updateClass, deleteClass, addEnrollment, deleteEnrollment, setEnrollmentStatus, addStudent, addRoom } = store
   const cls = data.classes.find(c => c.id === classId)!
   const room = data.rooms.find(r => r.id === cls?.roomId)
   const ins = data.enrollments.filter(e => e.classId === classId)
@@ -104,6 +104,7 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
   const [addSheet, setAddSheet] = useState(false)
   const [statusSheet, setStatusSheet] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [confirmDeleteEnrollment, setConfirmDeleteEnrollment] = useState<string | null>(null)
   const [addInput, setAddInput] = useState('')
   const [selStudent, setSelStudent] = useState<string | null>(null)
   const [editForm, setEditForm] = useState({ name: cls?.name || '', date: cls?.date || '', time: cls?.time || '', capacity: String(cls?.capacity || 8), price: String(cls?.price || 20), roomCost: String(cls?.roomCost || 0), roomId: cls?.roomId || '', seriesId: cls?.seriesId || '' })
@@ -419,9 +420,29 @@ export default function ClassScreen({ store, classId, onBack }: Props) {
               {o.l}
             </div>
           ))}
+          <div style={{ marginTop: 16, borderTop: '.5px solid #e8e0d0', paddingTop: 16 }}>
+            <button className="btn-destructive" onClick={() => { setConfirmDeleteEnrollment(curEnrollment.id); setStatusSheet(null) }}>Quitar de esta clase</button>
+          </div>
           <button className="btn-ghost" onClick={() => setStatusSheet(null)}>Cancelar</button>
         </Sheet>
       )}
+
+      <Sheet open={!!confirmDeleteEnrollment} onClose={() => setConfirmDeleteEnrollment(null)} title="Quitar alumna">
+        {(() => {
+          const e = confirmDeleteEnrollment ? data.enrollments.find(x => x.id === confirmDeleteEnrollment) : null
+          const s = e ? data.students.find(x => x.id === e.studentId) : null
+          return (
+            <>
+              <p style={{ fontSize: 14, color: '#5a4a3a', marginBottom: 16, lineHeight: 1.5 }}>¿Quitar a <strong>{s?.name}</strong> de esta clase? Esta acción no se puede deshacer.</p>
+              <button className="btn-destructive" onClick={async () => {
+                if (confirmDeleteEnrollment) await deleteEnrollment(confirmDeleteEnrollment)
+                setConfirmDeleteEnrollment(null)
+              }}>Sí, quitar</button>
+              <button className="btn-ghost" onClick={() => setConfirmDeleteEnrollment(null)}>Cancelar</button>
+            </>
+          )
+        })()}
+      </Sheet>
     </>
   )
 }

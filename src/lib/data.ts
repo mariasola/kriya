@@ -68,6 +68,10 @@ function unwrap<T>(result: { data: T | null; error: any }): T {
   return result.data
 }
 
+export function ensureDeleteAffectedRows(entity: string, count: number | null): void {
+  if (!count) throw new Error(`${entity} not found or you do not have permission to delete it`)
+}
+
 // ── Loaders ────────────────────────────────────────────────────────────────
 
 export async function loadData(): Promise<AppData> {
@@ -115,6 +119,18 @@ export async function updateRoom(id: string, changes: Partial<Room>): Promise<Ro
   return mapRoom(row)
 }
 
+export async function deleteRoom(id: string): Promise<void> {
+  const userId = await getUserId()
+  const detachClasses = await supabase.from('classes')
+    .update({ room_id: null })
+    .eq('room_id', id)
+    .eq('user_id', userId)
+  if (detachClasses.error) throw new Error(detachClasses.error.message)
+  const { error, count } = await supabase.from('rooms').delete({ count: 'exact' }).eq('id', id).eq('user_id', userId)
+  if (error) throw new Error(error.message)
+  ensureDeleteAffectedRows('Room', count)
+}
+
 // ── Students ───────────────────────────────────────────────────────────────
 
 export async function createStudent(data: Omit<Student, 'id'>): Promise<Student> {
@@ -131,6 +147,17 @@ export async function updateStudent(id: string, changes: Partial<Student>): Prom
     .update({ name: changes.name, phone: changes.phone, notes: changes.notes })
     .eq('id', id).eq('user_id', userId).select().single())
   return mapStudent(row)
+}
+
+export async function deleteStudent(id: string): Promise<void> {
+  const userId = await getUserId()
+  const deleteEnrollments = await supabase.from('enrollments').delete().eq('student_id', id).eq('user_id', userId)
+  if (deleteEnrollments.error) throw new Error(deleteEnrollments.error.message)
+  const deleteSubscriptions = await supabase.from('subscriptions').delete().eq('student_id', id).eq('user_id', userId)
+  if (deleteSubscriptions.error) throw new Error(deleteSubscriptions.error.message)
+  const { error, count } = await supabase.from('students').delete({ count: 'exact' }).eq('id', id).eq('user_id', userId)
+  if (error) throw new Error(error.message)
+  ensureDeleteAffectedRows('Student', count)
 }
 
 // ── Classes ────────────────────────────────────────────────────────────────
@@ -194,6 +221,13 @@ export async function updateEnrollment(id: string, changes: Partial<Enrollment>)
   return mapEnrollment(row)
 }
 
+export async function deleteEnrollment(id: string): Promise<void> {
+  const userId = await getUserId()
+  const { error, count } = await supabase.from('enrollments').delete({ count: 'exact' }).eq('id', id).eq('user_id', userId)
+  if (error) throw new Error(error.message)
+  ensureDeleteAffectedRows('Enrollment', count)
+}
+
 // ── ClassSeries ────────────────────────────────────────────────────────────
 
 export async function getClassSeries(): Promise<ClassSeries[]> {
@@ -223,6 +257,10 @@ export async function updateClassSeries(id: string, changes: Partial<Pick<ClassS
 
 export async function deleteClassSeries(id: string): Promise<void> {
   const userId = await getUserId()
+  const deleteSubscriptions = await supabase.from('subscriptions').delete().eq('series_id', id).eq('user_id', userId)
+  if (deleteSubscriptions.error) throw new Error(deleteSubscriptions.error.message)
+  const detachClasses = await supabase.from('classes').update({ series_id: null }).eq('series_id', id).eq('user_id', userId)
+  if (detachClasses.error) throw new Error(detachClasses.error.message)
   const { error } = await supabase.from('class_series').delete().eq('id', id).eq('user_id', userId)
   if (error) throw new Error(error.message)
 }

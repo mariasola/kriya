@@ -88,8 +88,13 @@ function AuthenticatedApp() {
           onDelete={selectedSeries ? async () => {
             await store.deleteClassSeries(selectedSeries.id)
             setSelectedSeries(null)
-            goBack()
-            goBack() // Go back twice: form → detail → groups list
+            let targetScreen: Screen = tab
+            setScreenStack(prev => {
+              const nextStack = prev.slice(0, -2)
+              targetScreen = nextStack[nextStack.length - 1] ?? tab
+              return nextStack
+            })
+            setScreen(targetScreen)
           } : undefined}
         />
       )}

@@ -121,6 +121,11 @@ export async function updateRoom(id: string, changes: Partial<Room>): Promise<Ro
 
 export async function deleteRoom(id: string): Promise<void> {
   const userId = await getUserId()
+  const detachClasses = await supabase.from('classes')
+    .update({ room_id: null })
+    .eq('room_id', id)
+    .eq('user_id', userId)
+  if (detachClasses.error) throw new Error(detachClasses.error.message)
   const { error, count } = await supabase.from('rooms').delete({ count: 'exact' }).eq('id', id).eq('user_id', userId)
   if (error) throw new Error(error.message)
   ensureDeleteAffectedRows('Room', count)
@@ -146,6 +151,10 @@ export async function updateStudent(id: string, changes: Partial<Student>): Prom
 
 export async function deleteStudent(id: string): Promise<void> {
   const userId = await getUserId()
+  const deleteEnrollments = await supabase.from('enrollments').delete().eq('student_id', id).eq('user_id', userId)
+  if (deleteEnrollments.error) throw new Error(deleteEnrollments.error.message)
+  const deleteSubscriptions = await supabase.from('subscriptions').delete().eq('student_id', id).eq('user_id', userId)
+  if (deleteSubscriptions.error) throw new Error(deleteSubscriptions.error.message)
   const { error, count } = await supabase.from('students').delete({ count: 'exact' }).eq('id', id).eq('user_id', userId)
   if (error) throw new Error(error.message)
   ensureDeleteAffectedRows('Student', count)
@@ -248,6 +257,10 @@ export async function updateClassSeries(id: string, changes: Partial<Pick<ClassS
 
 export async function deleteClassSeries(id: string): Promise<void> {
   const userId = await getUserId()
+  const deleteSubscriptions = await supabase.from('subscriptions').delete().eq('series_id', id).eq('user_id', userId)
+  if (deleteSubscriptions.error) throw new Error(deleteSubscriptions.error.message)
+  const detachClasses = await supabase.from('classes').update({ series_id: null }).eq('series_id', id).eq('user_id', userId)
+  if (detachClasses.error) throw new Error(detachClasses.error.message)
   const { error } = await supabase.from('class_series').delete().eq('id', id).eq('user_id', userId)
   if (error) throw new Error(error.message)
 }

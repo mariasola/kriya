@@ -1,8 +1,47 @@
 import { describe, it, expect, vi } from 'vitest'
 
-vi.mock('./supabase', () => ({ supabase: {} }))
+type Step = { table: string; op: 'update' | 'delete'; payload?: any; filters: Array<{ key: string; value: any }> }
 
-import { mapRoom, mapStudent, mapClass, mapEnrollment, ensureDeleteAffectedRows } from './data'
+const { recordedSteps, authGetUser, fromMock } = vi.hoisted(() => {
+  return {
+    recordedSteps: [] as Step[],
+    authGetUser: vi.fn(async () => ({ data: { user: { id: 'u1' } } })),
+    fromMock: vi.fn(),
+  }
+})
+
+function makeQuery(table: string) {
+  const step: Step = { table, op: 'delete', filters: [] }
+  return {
+    update(payload: any) {
+      step.op = 'update'
+      step.payload = payload
+      return this
+    },
+    delete(payload?: any) {
+      step.op = 'delete'
+      step.payload = payload
+      return this
+    },
+    eq(key: string, value: any) {
+      step.filters.push({ key, value })
+      if (step.filters.length >= 2) {
+        recordedSteps.push(step)
+        return { error: null, count: step.table === 'students' || step.table === 'rooms' ? 1 : null }
+      }
+      return this
+    },
+  }
+}
+
+vi.mock('./supabase', () => ({
+  supabase: {
+    auth: { getUser: authGetUser },
+    from: fromMock.mockImplementation((table: string) => makeQuery(table)),
+  },
+}))
+
+import { mapRoom, mapStudent, mapClass, mapEnrollment, ensureDeleteAffectedRows, deleteRoom, deleteStudent, deleteClassSeries } from './data'
 
 // ── mapRoom ────────────────────────────────────────────────────────────────
 
@@ -121,5 +160,44 @@ describe('ensureDeleteAffectedRows', () => {
 
   it('throws when count is null', () => {
     expect(() => ensureDeleteAffectedRows('Student', null)).toThrow('Student not found or you do not have permission to delete it')
+  })
+})
+
+describe('delete cascades', () => {
+  it('deleteRoom detaches classes for current user before deleting room', async () => {
+    recordedSteps.length = 0
+    await deleteRoom('r1')
+    expect(recordedSteps[0]).toEqual({
+      table: 'classes',
+      op: 'update',
+      payload: { room_id: null },
+      filters: [{ key: 'room_id', value: 'r1' }, { key: 'user_id', value: 'u1' }],
+    })
+    expect(recordedSteps[1].table).toBe('rooms')
+    expect(recordedSteps[1].op).toBe('delete')
+  })
+
+  it('deleteStudent removes enrollments and subscriptions before deleting student', async () => {
+    recordedSteps.length = 0
+    await deleteStudent('s1')
+    expect(recordedSteps[0].table).toBe('enrollments')
+    expect(recordedSteps[0].filters).toEqual([{ key: 'student_id', value: 's1' }, { key: 'user_id', value: 'u1' }])
+    expect(recordedSteps[1].table).toBe('subscriptions')
+    expect(recordedSteps[1].filters).toEqual([{ key: 'student_id', value: 's1' }, { key: 'user_id', value: 'u1' }])
+    expect(recordedSteps[2].table).toBe('students')
+  })
+
+  it('deleteClassSeries removes subscriptions and detaches classes before deleting series', async () => {
+    recordedSteps.length = 0
+    await deleteClassSeries('cs1')
+    expect(recordedSteps[0].table).toBe('subscriptions')
+    expect(recordedSteps[0].filters).toEqual([{ key: 'series_id', value: 'cs1' }, { key: 'user_id', value: 'u1' }])
+    expect(recordedSteps[1]).toEqual({
+      table: 'classes',
+      op: 'update',
+      payload: { series_id: null },
+      filters: [{ key: 'series_id', value: 'cs1' }, { key: 'user_id', value: 'u1' }],
+    })
+    expect(recordedSteps[2].table).toBe('class_series')
   })
 })
